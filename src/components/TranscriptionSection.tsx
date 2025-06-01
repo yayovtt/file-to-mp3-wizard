@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, Loader2, Download } from 'lucide-react';
+import { FileText, Loader2, Download, MessageSquare } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
 import { processText } from '@/services/textProcessingService';
@@ -146,7 +146,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
   const handleShare = () => {
     const transcriptionsText = transcriptions
-      .map(result => `${result.fileName}:\n${result.transcription}${result.summary ? `\n\nסיכום: ${result.summary}` : ''}`)
+      .map(result => `${result.fileName}:\n${result.transcription}${result.processedText ? `\n\nטקסט מעובד: ${result.processedText}` : ''}`)
       .join('\n\n---\n\n');
     
     const whatsappText = encodeURIComponent(`תמלולים:\n\n${transcriptionsText}`);
