@@ -33,7 +33,7 @@ interface TranscriptionSectionProps {
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const groqApiKey = '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';
   const chatgptApiKey = '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';
-  const claudeApiKey = 'sk-ant-api03-placeholder-key'; // Add your Claude API key here
+  const claudeApiKey = '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';
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const [fontSize, setFontSize] = useState(16);
   const [fontFamily, setFontFamily] = useState('Arial');
