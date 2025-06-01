@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { FileText, MessageSquare, Loader2, Download } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
@@ -25,21 +24,12 @@ interface TranscriptionResult {
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
-  const [groqApiKey, setGroqApiKey] = useState('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');
-  const [chatgptApiKey, setChatgptApiKey] = useState('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');
+  const groqApiKey = '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';
+  const chatgptApiKey = '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';
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const { toast } = useToast();
 
   const handleTranscribe = async (file: FileItem) => {
-    if (!groqApiKey.trim()) {
-      toast({
-        title: 'שגיאה',
-        description: 'נא להזין מפתח API של Groq',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
     
     if (existingIndex >= 0) {
@@ -86,15 +76,6 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   };
 
   const handleSummarize = async (transcriptionResult: TranscriptionResult) => {
-    if (!chatgptApiKey.trim()) {
-      toast({
-        title: 'שגיאה',
-        description: 'נא להזין מפתח API של ChatGPT',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     if (!transcriptionResult.transcription.trim()) {
       toast({
         title: 'שגיאה',
@@ -158,80 +139,57 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const completedFiles = files.filter(f => f.status === 'completed');
 
   return (
-    <div className="space-y-6">
-      {/* API Keys Section */}
-      <Card className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">מפתחות API</h3>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="groq-api" className="block text-sm font-medium text-gray-700 mb-2">
-              Groq API Key (לתמלול)
-            </label>
-            <Input
-              id="groq-api"
-              type="password"
-              value={groqApiKey}
-              onChange={(e) => setGroqApiKey(e.target.value)}
-              placeholder="הזן מפתח API של Groq"
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label htmlFor="chatgpt-api" className="block text-sm font-medium text-gray-700 mb-2">
-              ChatGPT API Key (לסיכום)
-            </label>
-            <Input
-              id="chatgpt-api"
-              type="password"
-              value={chatgptApiKey}
-              onChange={(e) => setChatgptApiKey(e.target.value)}
-              placeholder="הזן מפתח API של ChatGPT"
-              className="w-full"
-            />
-          </div>
-        </div>
-      </Card>
-
+    <div className="space-y-8">
       {/* Files Ready for Transcription */}
       {completedFiles.length > 0 && (
-        <Card className="p-6 bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center mb-4">
-            <FileText className="w-5 h-5 mr-2 text-purple-600" />
-            <h3 className="text-lg font-semibold text-gray-800">קבצים מוכנים לתמלול</h3>
-            <Badge variant="secondary" className="mr-2">
+        <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-lg border-0 rounded-xl">
+          <div className="flex items-center mb-6">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl mr-4">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">קבצים מוכנים לתמלול</h3>
+              <p className="text-gray-600 text-sm">המר את הקבצים שלך לטקסט באמצעות AI מתקדם</p>
+            </div>
+            <Badge variant="secondary" className="mr-4 px-4 py-2 text-lg">
               {completedFiles.length}
             </Badge>
           </div>
           
-          <div className="space-y-3">
+          <div className="grid gap-4">
             {completedFiles.map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <div className="bg-purple-100 p-2 rounded-full">
-                    <FileText className="w-4 h-4 text-purple-600" />
+              <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                  <div className="bg-gradient-to-r from-purple-100 to-purple-200 p-3 rounded-xl">
+                    <FileText className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="font-semibold text-gray-900 text-lg">
                       {file.file.name}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      מוכן לתמלול
+                    <p className="text-sm text-gray-600">
+                      מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 </div>
                 
                 <Button
-                  size="sm"
+                  size="lg"
                   onClick={() => handleTranscribe(file)}
                   disabled={transcriptions.find(t => t.fileId === file.id)?.isTranscribing}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-3 rounded-xl shadow-lg"
                 >
                   {transcriptions.find(t => t.fileId === file.id)?.isTranscribing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                      מתמלל...
+                    </>
                   ) : (
-                    <FileText className="w-4 h-4" />
+                    <>
+                      <FileText className="w-5 h-5 ml-2" />
+                      תמלל עכשיו
+                    </>
                   )}
-                  תמלל
                 </Button>
               </div>
             ))}
@@ -241,82 +199,101 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
       {/* Transcription Results */}
       {transcriptions.length > 0 && (
-        <Card className="p-6 bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center mb-4">
-            <MessageSquare className="w-5 h-5 mr-2 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-800">תוצאות תמלול</h3>
+        <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-lg border-0 rounded-xl">
+          <div className="flex items-center mb-6">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl mr-4">
+              <MessageSquare className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">תוצאות תמלול וסיכום</h3>
+              <p className="text-gray-600 text-sm">הטקסטים המתמללים והסיכומים שלהם</p>
+            </div>
           </div>
           
-          <div className="space-y-6">
+          <div className="space-y-8">
             {transcriptions.map((result) => (
-              <div key={result.fileId} className="border rounded-lg p-4 bg-gray-50">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">{result.fileName}</h4>
-                  <div className="flex gap-2">
-                    {result.transcription && !result.summary && (
+              <div key={result.fileId} className="border border-gray-200 rounded-xl p-6 bg-gradient-to-r from-gray-50 to-blue-50 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 text-lg">{result.fileName}</h4>
+                      <p className="text-sm text-gray-600">תמלול וסיכום אוטומטי</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    {result.transcription && !result.summary && !result.isSummarizing && (
                       <Button
-                        size="sm"
+                        size="lg"
                         onClick={() => handleSummarize(result)}
                         disabled={result.isSummarizing}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-lg"
                       >
                         {result.isSummarizing ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                            מסכם...
+                          </>
                         ) : (
-                          <MessageSquare className="w-4 h-4 mr-1" />
+                          <>
+                            <MessageSquare className="w-4 h-4 ml-2" />
+                            סכם טקסט
+                          </>
                         )}
-                        סכם
                       </Button>
                     )}
                     {result.transcription && (
                       <Button
-                        size="sm"
+                        size="lg"
                         variant="outline"
                         onClick={() => downloadTranscription(result)}
+                        className="px-6 py-2 rounded-lg border-2 hover:bg-gray-50"
                       >
-                        <Download className="w-4 h-4 mr-1" />
-                        הורד
+                        <Download className="w-4 h-4 ml-2" />
+                        הורד קובץ
                       </Button>
                     )}
                   </div>
                 </div>
                 
                 {result.isTranscribing && (
-                  <div className="flex items-center text-blue-600 mb-3">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    מתמלל...
+                  <div className="flex items-center justify-center py-8 text-blue-600">
+                    <Loader2 className="w-6 h-6 animate-spin ml-3" />
+                    <span className="text-lg font-medium">מתמלל את הקובץ...</span>
                   </div>
                 )}
                 
                 {result.transcription && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        תמלול:
+                      <label className="block text-lg font-bold text-gray-700 mb-3">
+                        תמלול מלא:
                       </label>
                       <Textarea
                         value={result.transcription}
                         readOnly
-                        className="min-h-[120px] resize-none"
+                        className="min-h-[150px] resize-none text-base leading-relaxed p-4 bg-white border-2 border-gray-200 rounded-lg"
                       />
                     </div>
                     
                     {result.isSummarizing && (
-                      <div className="flex items-center text-blue-600">
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        מסכם...
+                      <div className="flex items-center justify-center py-6 text-blue-600">
+                        <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                        <span className="text-lg font-medium">מכין סיכום חכם...</span>
                       </div>
                     )}
                     
                     {result.summary && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          סיכום:
+                        <label className="block text-lg font-bold text-gray-700 mb-3">
+                          סיכום חכם:
                         </label>
                         <Textarea
                           value={result.summary}
                           readOnly
-                          className="min-h-[80px] resize-none bg-green-50 border-green-200"
+                          className="min-h-[120px] resize-none text-base leading-relaxed p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg"
                         />
                       </div>
                     )}

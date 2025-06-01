@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,65 +75,69 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-6 py-12 max-w-7xl">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4 space-x-2">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-2xl">
-              <Music className="w-6 h-6 text-white" />
+        <div className="text-center mb-16">
+          <div className="flex items-center justify-center mb-6 space-x-4">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-3xl shadow-lg">
+              <Music className="w-8 h-8 text-white" />
             </div>
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-2xl">
-              <Video className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-3xl shadow-lg">
+              <Video className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            המרת אודיו ווידאו ל-MP3 + תמלול וסיכום
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6 leading-tight">
+            המרת אודיו ווידאו ל-MP3
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            המר בקלות כל קובץ אודיו או וידאו ל-MP3 באיכות גבוהה, תמלל תוכן לטקסט וקבל סיכום אוטומטי
+          <h2 className="text-2xl md:text-3xl font-semibold text-gray-700 mb-4">
+            + תמלול וסיכום בעברית
+          </h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            המר בקלות כל קובץ אודיו או וידאו ל-MP3 באיכות גבוהה, תמלל תוכן לטקסט וקבל סיכום אוטומטי בעברית
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="p-6 text-center bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0">
-            <div className="text-3xl font-bold mb-2">{files.length}</div>
-            <div className="text-blue-100">קבצים בסך הכל</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <Card className="p-8 text-center bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+            <div className="text-4xl font-bold mb-3">{files.length}</div>
+            <div className="text-blue-100 text-lg">קבצים בסך הכל</div>
           </Card>
-          <Card className="p-6 text-center bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0">
-            <div className="text-3xl font-bold mb-2">{pendingFiles.length}</div>
-            <div className="text-purple-100">ממתינים להמרה</div>
+          <Card className="p-8 text-center bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+            <div className="text-4xl font-bold mb-3">{pendingFiles.length}</div>
+            <div className="text-purple-100 text-lg">ממתינים להמרה</div>
           </Card>
-          <Card className="p-6 text-center bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
-            <div className="text-3xl font-bold mb-2">{completedFiles.length}</div>
-            <div className="text-green-100">הושלמו</div>
+          <Card className="p-8 text-center bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+            <div className="text-4xl font-bold mb-3">{completedFiles.length}</div>
+            <div className="text-green-100 text-lg">הושלמו</div>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
           {/* Upload Section */}
-          <div className="space-y-6">
-            <Card className="p-6 border-2 border-dashed border-blue-200 bg-white/80 backdrop-blur-sm">
+          <div className="space-y-8">
+            <Card className="p-8 border-2 border-dashed border-blue-300 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
               <FileUpload onFilesSelected={handleFilesSelected} />
             </Card>
 
             {files.length > 0 && (
-              <Card className="p-6 bg-white/80 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">רשימת קבצים</h3>
-                  <div className="flex gap-2">
+              <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-800">רשימת קבצים</h3>
+                  <div className="flex gap-3">
                     {pendingFiles.length > 0 && (
                       <Button
                         onClick={handleConvertAll}
                         disabled={isConverting}
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                        size="lg"
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-8 py-3 text-lg rounded-xl shadow-lg"
                       >
-                        <Sparkles className="w-4 h-4 mr-2" />
+                        <Sparkles className="w-5 h-5 ml-2" />
                         המר הכל
                       </Button>
                     )}
                     {completedFiles.length > 0 && (
-                      <Button variant="outline" onClick={clearCompleted}>
+                      <Button variant="outline" onClick={clearCompleted} size="lg" className="px-6 py-3 text-lg rounded-xl">
                         נקה הושלמו
                       </Button>
                     )}
@@ -141,16 +146,48 @@ const Index = () => {
                 <ConversionStatus files={files} />
               </Card>
             )}
+
+            {/* Supported Formats */}
+            <Card className="p-8 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-300 shadow-xl rounded-2xl">
+              <h3 className="text-2xl font-bold mb-6 text-gray-800">פורמטים נתמכים</h3>
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-700 mb-4">אודיו:</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {['WAV', 'FLAC', 'AAC', 'OGG', 'M4A', 'WMA'].map(format => (
+                      <Badge key={format} variant="secondary" className="justify-center py-2 text-sm font-medium">
+                        {format}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-700 mb-4">וידאו:</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {['MP4', 'AVI', 'MOV', 'MKV', 'WMV', 'WebM'].map(format => (
+                      <Badge key={format} variant="secondary" className="justify-center bg-purple-100 text-purple-700 py-2 text-sm font-medium">
+                        {format}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
 
           {/* Download and Transcription Section */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {completedFiles.length > 0 && (
-              <Card className="p-6 bg-white/80 backdrop-blur-sm">
-                <div className="flex items-center mb-4">
-                  <Download className="w-5 h-5 mr-2 text-green-600" />
-                  <h3 className="text-lg font-semibold text-gray-800">קבצים מוכנים להורדה</h3>
-                  <Badge variant="secondary" className="mr-2">
+              <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
+                <div className="flex items-center mb-6">
+                  <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl mr-4">
+                    <Download className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-800">קבצים מוכנים להורדה</h3>
+                    <p className="text-gray-600">הקבצים המומרים שלך מוכנים</p>
+                  </div>
+                  <Badge variant="secondary" className="mr-4 px-4 py-2 text-lg">
                     {completedFiles.length}
                   </Badge>
                 </div>
@@ -160,33 +197,6 @@ const Index = () => {
 
             {/* Transcription Section */}
             <TranscriptionSection files={files} />
-
-            {/* Supported Formats */}
-            <Card className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">פורמטים נתמכים</h3>
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">אודיו:</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['WAV', 'FLAC', 'AAC', 'OGG', 'M4A', 'WMA'].map(format => (
-                      <Badge key={format} variant="secondary" className="justify-center">
-                        {format}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">וידאו:</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['MP4', 'AVI', 'MOV', 'MKV', 'WMV', 'WebM'].map(format => (
-                      <Badge key={format} variant="secondary" className="justify-center bg-purple-100 text-purple-700">
-                        {format}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Card>
           </div>
         </div>
       </div>
