@@ -6,7 +6,8 @@ import { ConversionStatus } from '@/components/ConversionStatus';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TranscriptionSection } from '@/components/TranscriptionSection';
-import { FileText, FileAudio, Sparkles } from 'lucide-react';
+import { DownloadSection } from '@/components/DownloadSection';
+import { FileText, FileAudio, Download, Sparkles } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
 interface NavigationTabsProps {
@@ -14,7 +15,6 @@ interface NavigationTabsProps {
   onFilesSelected: (files: File[]) => void;
   onConvertAll: () => void;
   onClearCompleted: () => void;
-  onRemoveFile: (fileId: string) => void;
   isConverting: boolean;
 }
 
@@ -23,7 +23,6 @@ export const NavigationTabs = ({
   onFilesSelected, 
   onConvertAll, 
   onClearCompleted, 
-  onRemoveFile,
   isConverting 
 }: NavigationTabsProps) => {
   const completedFiles = files.filter(f => f.status === 'completed');
@@ -80,11 +79,11 @@ export const NavigationTabs = ({
                       )}
                     </div>
                   </div>
-                  <ConversionStatus files={files} onRemoveFile={onRemoveFile} />
+                  <ConversionStatus files={files} />
                 </Card>
               )}
 
-              {/* Supported Formats */}
+              {/* Supported Formats - Much Smaller */}
               <Card className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-300 shadow-lg rounded-xl">
                 <h3 className="text-lg font-bold mb-3 text-gray-800">פורמטים נתמכים</h3>
                 <div className="text-sm text-gray-600">
@@ -94,31 +93,31 @@ export const NavigationTabs = ({
               </Card>
             </div>
 
-            {/* Info Section */}
+            {/* Download Section */}
             <div className="space-y-8">
-              <Card className="p-8 bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 shadow-lg rounded-xl">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">תהליך אוטומטי</h3>
-                <div className="space-y-3 text-gray-700">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full ml-3"></div>
-                    <span>המרה ל-MP3 באיכות גבוהה</span>
+              {completedFiles.length > 0 && (
+                <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
+                  <div className="flex items-center mb-6">
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl ml-4">
+                      <Download className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-800">קבצים מוכנים להורדה</h3>
+                      <p className="text-gray-600">הקבצים המומרים שלך מוכנים</p>
+                    </div>
+                    <Badge variant="secondary" className="ml-4 px-4 py-2 text-lg">
+                      {completedFiles.length}
+                    </Badge>
                   </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full ml-3"></div>
-                    <span>תמלול אוטומטי בעברית</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full ml-3"></div>
-                    <span>הורדה מיידית של התוצאות</span>
-                  </div>
-                </div>
-              </Card>
+                  <DownloadSection files={completedFiles} />
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="transcription">
-          <TranscriptionSection files={files} onRemoveFile={onRemoveFile} />
+          <TranscriptionSection files={files} />
         </TabsContent>
       </Tabs>
     </div>
