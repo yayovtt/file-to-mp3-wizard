@@ -4,6 +4,9 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { NavigationTabs } from '@/components/NavigationTabs';
 import { Music, Video } from 'lucide-react';
+import { transcribeAudio } from '@/services/transcriptionService';
+import { extractAudioFromVideo, isVideoFile, getMediaInfo } from '@/services/audioExtractionService';
+import { useToast } from '@/hooks/use-toast';
 
 export interface FileItem {
   id: string;
@@ -11,11 +14,16 @@ export interface FileItem {
   status: 'pending' | 'converting' | 'completed' | 'error';
   progress: number;
   convertedUrl?: string;
+  isTranscribing?: boolean;
+  transcriptionProgress?: number;
+  transcription?: string;
 }
 
 const Index = () => {
+  const groqApiKey = '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';
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isConverting, setIsConverting] = useState(false);
+  const { toast } = useToast();
 
   const handleFilesSelected = (selectedFiles: File[]) => {
     const newFiles: FileItem[] = selectedFiles.map(file => ({
@@ -25,6 +33,70 @@ const Index = () => {
       progress: 0,
     }));
     setFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const startTranscription = async (fileId: string) => {
+    const fileItem = files.find(f => f.id === fileId);
+    if (!fileItem) return;
+
+    console.log('Starting auto-transcription for:', fileItem.file.name);
+    
+    setFiles(prev => prev.map(f => 
+      f.id === fileId 
+        ? { ...f, isTranscribing: true, transcriptionProgress: 0 }
+        : f
+    ));
+
+    try {
+      let audioFile = fileItem.file;
+      const mediaInfo = getMediaInfo(fileItem.file);
+      
+      // Extract audio from video if needed
+      if (mediaInfo.isVideo) {
+        console.log('Video file detected, extracting audio...');
+        const extractionResult = await extractAudioFromVideo(fileItem.file);
+        audioFile = new File([extractionResult.audioBlob], `${fileItem.file.name}_audio.wav`, {
+          type: 'audio/wav'
+        });
+      }
+      
+      // Transcribe the audio file
+      const transcription = await transcribeAudio(
+        audioFile, 
+        groqApiKey,
+        (progress) => {
+          setFiles(prev => prev.map(f => 
+            f.id === fileId 
+              ? { ...f, transcriptionProgress: progress }
+              : f
+          ));
+        }
+      );
+      
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, transcription, isTranscribing: false, transcriptionProgress: 100 }
+          : f
+      ));
+
+      toast({
+        title: 'תמלול הושלם',
+        description: `התמלול של ${fileItem.file.name} הושלם בהצלחה`,
+      });
+    } catch (error) {
+      console.error('Auto-transcription error:', error);
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, isTranscribing: false, transcriptionProgress: 0 }
+          : f
+      ));
+      
+      toast({
+        title: 'שגיאה בתמלול אוטומטי',
+        description: `אירעה שגיאה במהלך התמלול: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
   };
 
   const simulateConversion = async (fileId: string) => {
@@ -42,12 +114,17 @@ const Index = () => {
       updateProgress(i);
     }
 
-    // Create a mock converted URL (in real app, this would be the actual converted file)
+    // Create a mock converted URL
     setFiles(prev => prev.map(f => 
       f.id === fileId 
         ? { ...f, convertedUrl: URL.createObjectURL(f.file) }
         : f
     ));
+
+    // Start auto-transcription after conversion completes
+    setTimeout(() => {
+      startTranscription(fileId);
+    }, 500);
   };
 
   const handleConvertAll = async () => {
@@ -59,6 +136,10 @@ const Index = () => {
     }
     
     setIsConverting(false);
+  };
+
+  const removeFile = (fileId: string) => {
+    setFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
   const clearCompleted = () => {
@@ -133,6 +214,7 @@ const Index = () => {
           onFilesSelected={handleFilesSelected}
           onConvertAll={handleConvertAll}
           onClearCompleted={clearCompleted}
+          onRemoveFile={removeFile}
           isConverting={isConverting}
         />
       </div>

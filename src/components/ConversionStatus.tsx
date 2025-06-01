@@ -1,14 +1,16 @@
 
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { FileAudio, FileVideo, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FileAudio, FileVideo, CheckCircle, AlertCircle, Loader2, Download, X } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
 interface ConversionStatusProps {
   files: FileItem[];
+  onRemoveFile: (fileId: string) => void;
 }
 
-export const ConversionStatus = ({ files }: ConversionStatusProps) => {
+export const ConversionStatus = ({ files, onRemoveFile }: ConversionStatusProps) => {
   const getStatusIcon = (status: FileItem['status'], isVideo: boolean) => {
     const iconProps = "w-4 h-4";
     const BaseIcon = isVideo ? FileVideo : FileAudio;
@@ -68,12 +70,23 @@ export const ConversionStatus = ({ files }: ConversionStatusProps) => {
     );
   };
 
+  const handleDownload = (file: FileItem) => {
+    if (file.convertedUrl) {
+      const link = document.createElement('a');
+      link.href = file.convertedUrl;
+      link.download = `${file.file.name.replace(/\.[^/.]+$/, '')}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {files.map((file) => (
         <div key={file.id} className="p-4 bg-gray-50 rounded-lg border">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse flex-1">
               {getStatusIcon(file.status, isVideoFile(file.file.name))}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900 truncate">
@@ -84,14 +97,42 @@ export const ConversionStatus = ({ files }: ConversionStatusProps) => {
                 </p>
               </div>
             </div>
-            {getStatusBadge(file.status)}
+            <div className="flex items-center gap-2">
+              {file.status === 'completed' && file.convertedUrl && (
+                <Button
+                  size="sm"
+                  onClick={() => handleDownload(file)}
+                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1"
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              )}
+              {getStatusBadge(file.status)}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onRemoveFile(file.id)}
+                className="text-gray-500 hover:text-red-500 px-2"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           
           {file.status === 'converting' && (
             <div className="space-y-2">
               <Progress value={file.progress} className="h-2" />
               <p className="text-xs text-center text-gray-500">
-                {file.progress}% הושלם
+                המרה: {file.progress}% הושלם
+              </p>
+            </div>
+          )}
+
+          {file.isTranscribing && (
+            <div className="space-y-2 mt-3">
+              <Progress value={file.transcriptionProgress || 0} className="h-2 bg-purple-100" />
+              <p className="text-xs text-center text-purple-600">
+                תמלול: {Math.round(file.transcriptionProgress || 0)}% הושלם
               </p>
             </div>
           )}
