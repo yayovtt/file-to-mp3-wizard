@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Download, FileAudio } from 'lucide-react';
-import { FileItem } from '@/types/fileItem';
+import { FileItem } from '@/pages/Index';
 
 interface DownloadSectionProps {
   files: FileItem[];
@@ -9,21 +9,19 @@ interface DownloadSectionProps {
 
 export const DownloadSection = ({ files }: DownloadSectionProps) => {
   const handleDownload = (file: FileItem) => {
-    if (file.outputBlob) {
-      const url = URL.createObjectURL(file.outputBlob);
+    if (file.convertedUrl) {
       const link = document.createElement('a');
-      link.href = url;
+      link.href = file.convertedUrl;
       link.download = file.file.name.replace(/\.[^/.]+$/, '.mp3');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
     }
   };
 
   const handleDownloadAll = () => {
     files.forEach(file => {
-      if (file.outputBlob) {
+      if (file.convertedUrl) {
         setTimeout(() => handleDownload(file), 100);
       }
     });

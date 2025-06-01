@@ -1,3 +1,4 @@
+
 interface ChatGPTMessage {
   role: 'user' | 'system' | 'assistant';
   content: string;
@@ -11,34 +12,15 @@ interface ChatGPTResponse {
   }>;
 }
 
-const getProcessingPrompt = (processingTypes: string[]): string => {
-  const prompts: { [key: string]: string } = {
-    correct: 'תקן שגיאות כתיב ודקדוק, ובמידת הצורך הוסף מקורות או הפניות רלוונטיות',
-    rewrite: 'ערוך מחדש את הטקסט בצורה ברורה יותר ומובנת יותר',
-    expand: 'הרחב את הרעיונות הקיימים בטקסט והוסף פרטים נוספים',
-    summarize: 'סכם את הטקסט בצורה קצרה וברורה תוך שמירה על הנקודות המרכזיות'
-  };
-
-  const selectedPrompts = processingTypes.map(type => prompts[type]).filter(Boolean);
-  
-  if (selectedPrompts.length === 1) {
-    return selectedPrompts[0];
-  } else {
-    return `בצע את הפעולות הבאות על הטקסט: ${selectedPrompts.join(', ')}`;
-  }
-};
-
-export const processTextWithAI = async (text: string, processingTypes: string[], apiKey: string): Promise<string> => {
-  const processingPrompt = getProcessingPrompt(processingTypes);
-  
+export const summarizeText = async (text: string, apiKey: string): Promise<string> => {
   const messages: ChatGPTMessage[] = [
     {
       role: 'system',
-      content: 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. בצע את המשימות המבוקשות בצורה מקצועית ומדויקת.',
+      content: 'אתה עוזר מקצועי לסיכום טקסטים בעברית. סכם את הטקסט הבא בצורה קצרה וברורה, תוך שמירה על הנקודות המרכזיות.',
     },
     {
       role: 'user',
-      content: `${processingPrompt}:\n\n${text}`,
+      content: `אנא סכם את הטקסט הבא:\n\n${text}`,
     },
   ];
 
@@ -51,7 +33,7 @@ export const processTextWithAI = async (text: string, processingTypes: string[],
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages,
-      max_tokens: 1000,
+      max_tokens: 500,
       temperature: 0.3,
     }),
   });
@@ -59,14 +41,9 @@ export const processTextWithAI = async (text: string, processingTypes: string[],
   if (!response.ok) {
     const errorText = await response.text();
     console.error('API Error:', errorText);
-    throw new Error(`Text processing failed: ${response.statusText}`);
+    throw new Error(`Summarization failed: ${response.statusText}`);
   }
 
   const result: ChatGPTResponse = await response.json();
   return result.choices[0].message.content;
-};
-
-// Keep the old function for backward compatibility
-export const summarizeText = async (text: string, apiKey: string): Promise<string> => {
-  return processTextWithAI(text, ['summarize'], apiKey);
 };
