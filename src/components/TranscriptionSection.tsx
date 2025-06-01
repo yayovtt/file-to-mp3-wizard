@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { FileText, Loader2, Download, MessageSquare, Info } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
-import { processText } from '@/services/textProcessingService';
+import { processText, AIProvider } from '@/services/textProcessingService';
 import { useToast } from '@/hooks/use-toast';
 import { FontControls } from '@/components/FontControls';
 import { TextProcessingOptions } from '@/components/TextProcessingOptions';
