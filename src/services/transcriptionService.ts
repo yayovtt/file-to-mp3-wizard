@@ -1,4 +1,3 @@
-
 import { splitAudioFile } from './audioSplitterService';
 
 interface TranscriptionResponse {
@@ -35,8 +34,8 @@ export const transcribeAudioChunked = async (
 ): Promise<ChunkedTranscriptionResult> => {
   console.log(`Starting transcription for file: ${audioFile.name}, size: ${audioFile.size} bytes`);
   
-  // Split file if necessary (using 5MB limit for maximum compatibility)
-  const chunks = await splitAudioFile(audioFile, 5 * 1024 * 1024);
+  // Split file if necessary (using 2MB limit for maximum compatibility)
+  const chunks = await splitAudioFile(audioFile, 2 * 1024 * 1024);
   console.log(`File split into ${chunks.length} chunks`);
   
   if (onProgress) onProgress(10);
@@ -50,7 +49,7 @@ export const transcribeAudioChunked = async (
     console.log(`Transcribing chunk ${i + 1}/${chunks.length}, size: ${(chunk.blob.size / 1024 / 1024).toFixed(2)}MB`);
     
     // Verify chunk size before sending - strict limit for compatibility
-    if (chunk.blob.size > 8 * 1024 * 1024) { // 8MB as absolute max
+    if (chunk.blob.size > 3 * 1024 * 1024) { // 3MB as absolute max (reduced from 8MB)
       throw new Error(`Chunk ${i + 1} is still too large: ${(chunk.blob.size / 1024 / 1024).toFixed(2)}MB`);
     }
     

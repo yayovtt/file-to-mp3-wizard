@@ -40,7 +40,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
   const handleTranscribe = async (file: FileItem) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
-    const isLargeFile = file.file.size > 5 * 1024 * 1024; // Updated to 5MB
+    const isLargeFile = file.file.size > 2 * 1024 * 1024; // Updated to 2MB
     
     if (existingIndex >= 0) {
       setTranscriptions(prev => prev.map((t, i) => 
@@ -67,10 +67,10 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
     try {
       if (isLargeFile) {
-        const estimatedChunks = Math.ceil(file.file.size / (5 * 1024 * 1024)) * 2;
+        const estimatedChunks = Math.ceil(file.file.size / (2 * 1024 * 1024)) * 3; // Updated calculation
         toast({
           title: 'קובץ גדול זוהה',
-          description: `הקובץ (${(file.file.size / 1024 / 1024).toFixed(1)}MB) יפוצל ל-${estimatedChunks} חלקים קטנים לתמלול`,
+          description: `הקובץ (${(file.file.size / 1024 / 1024).toFixed(1)}MB) יפוצל ל-${estimatedChunks} חלקים קטנים מאוד לתמלול`,
         });
       }
       
@@ -94,7 +94,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       ));
 
       const successMessage = isLargeFile 
-        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(file.file.size / (5 * 1024 * 1024)) * 2} חלקים)`
+        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(file.file.size / (2 * 1024 * 1024)) * 3} חלקים קטנים מאוד)`
         : `התמלול של ${file.file.name} הושלם בהצלחה`;
 
       toast({
@@ -281,8 +281,8 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           
           <div className="grid gap-4">
             {completedFiles.map((file) => {
-              const isLargeFile = file.file.size > 5 * 1024 * 1024; // Updated threshold
-              const estimatedChunks = Math.ceil(file.file.size / (5 * 1024 * 1024)) * 2; // Updated calculation
+              const isLargeFile = file.file.size > 2 * 1024 * 1024; // Updated threshold
+              const estimatedChunks = Math.ceil(file.file.size / (2 * 1024 * 1024)) * 3; // Updated calculation
               
               return (
                 <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
@@ -299,7 +299,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                         {isLargeFile && (
                           <div className="flex items-center text-blue-600">
                             <Info className="w-4 h-4 ml-1" />
-                            <span>יפוצל ל-{estimatedChunks} חלקים קטנים לתמלול</span>
+                            <span>יפוצל ל-{estimatedChunks} חלקים קטנים מאוד לתמלול</span>
                           </div>
                         )}
                       </div>
@@ -357,7 +357,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                       <div className="text-sm text-gray-600">
                         <p>תמלול ועיבוד אוטומטי • {(result.fileSize / 1024 / 1024).toFixed(2)} MB</p>
                         {result.wasChunked && (
-                          <p className="text-blue-600">נתמלל מ-{Math.ceil(result.fileSize / (5 * 1024 * 1024)) * 2} חלקים קטנים</p>
+                          <p className="text-blue-600">נתמלל מ-{Math.ceil(result.fileSize / (2 * 1024 * 1024)) * 3} חלקים קטנים מאוד</p>
                         )}
                       </div>
                     </div>
@@ -382,7 +382,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                     <div className="flex items-center justify-center text-blue-600">
                       <Loader2 className="w-6 h-6 animate-spin ml-3" />
                       <span className="text-lg font-medium">
-                        {result.wasChunked ? 'מתמלל קובץ גדול (פיצול לחלקים קטנים יותר)...' : 'מתמלל את הקובץ...'}
+                        {result.wasChunked ? 'מתמלל קובץ גדול (פיצול לחלקים קטנים מאוד)...' : 'מתמלל את הקובץ...'}
                       </span>
                     </div>
                     <div className="w-full">
