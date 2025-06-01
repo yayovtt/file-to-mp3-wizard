@@ -1,21 +1,16 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Loader2, Download, MessageSquare } from 'lucide-react';
+import { FileText, Loader2, Download, MessageSquare, Info } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
 import { processText } from '@/services/textProcessingService';
 import { useToast } from '@/hooks/use-toast';
 import { FontControls } from '@/components/FontControls';
 import { TextProcessingOptions } from '@/components/TextProcessingOptions';
-
-interface TranscriptionSectionProps {
-  files: FileItem[];
-}
 
 interface TranscriptionResult {
   fileId: string;
@@ -27,6 +22,12 @@ interface TranscriptionResult {
   isProcessing: boolean;
   transcriptionProgress: number;
   processingProgress: number;
+  fileSize: number;
+  wasChunked?: boolean;
+}
+
+interface TranscriptionSectionProps {
+  files: FileItem[];
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
@@ -37,41 +38,17 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const [fontFamily, setFontFamily] = useState('Arial');
   const { toast } = useToast();
 
-  const simulateProgress = async (
-    fileId: string,
-    type: 'transcription' | 'processing',
-    duration: number = 3000
-  ) => {
-    const steps = 20;
-    const interval = duration / steps;
-    
-    for (let i = 0; i <= steps; i++) {
-      const progress = (i / steps) * 100;
-      
-      setTranscriptions(prev => prev.map(t => 
-        t.fileId === fileId 
-          ? { 
-              ...t, 
-              [type === 'transcription' ? 'transcriptionProgress' : 'processingProgress']: progress 
-            }
-          : t
-      ));
-      
-      if (i < steps) {
-        await new Promise(resolve => setTimeout(resolve, interval));
-      }
-    }
-  };
-
   const handleTranscribe = async (file: FileItem) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
+    const isLargeFile = file.file.size > 49 * 1024 * 1024; // 49MB
     
     if (existingIndex >= 0) {
       setTranscriptions(prev => prev.map((t, i) => 
         i === existingIndex ? { 
           ...t, 
           isTranscribing: true, 
-          transcriptionProgress: 0 
+          transcriptionProgress: 0,
+          wasChunked: isLargeFile
         } : t
       ));
     } else {
@@ -83,18 +60,31 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         isProcessing: false,
         transcriptionProgress: 0,
         processingProgress: 0,
+        fileSize: file.file.size,
+        wasChunked: isLargeFile
       }]);
     }
 
     try {
-      // Start progress simulation
-      const progressPromise = simulateProgress(file.id, 'transcription', 2500);
+      if (isLargeFile) {
+        toast({
+          title: 'קובץ גדול זוהה',
+          description: `הקובץ (${(file.file.size / 1024 / 1024).toFixed(1)}MB) יפוצל אוטומטית לחלקים קטנים יותר לתמלול`,
+        });
+      }
       
-      // Start actual transcription
-      const transcriptionPromise = transcribeAudio(file.file, groqApiKey);
-      
-      // Wait for both to complete
-      const [transcription] = await Promise.all([transcriptionPromise, progressPromise]);
+      // Use the new chunked transcription with progress callback
+      const transcription = await transcribeAudio(
+        file.file, 
+        groqApiKey,
+        (progress) => {
+          setTranscriptions(prev => prev.map(t => 
+            t.fileId === file.id 
+              ? { ...t, transcriptionProgress: progress }
+              : t
+          ));
+        }
+      );
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === file.id 
@@ -102,9 +92,13 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           : t
       ));
 
+      const successMessage = isLargeFile 
+        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(file.file.size / (49 * 1024 * 1024))} חלקים)`
+        : `התמלול של ${file.file.name} הושלם בהצלחה`;
+
       toast({
         title: 'תמלול הושלם',
-        description: `התמלול של ${file.file.name} הושלם בהצלחה`,
+        description: successMessage,
       });
     } catch (error) {
       console.error('Transcription error:', error);
@@ -116,7 +110,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       
       toast({
         title: 'שגיאה בתמלול',
-        description: 'אירעה שגיאה במהלך התמלול. נסה שוב.',
+        description: `אירעה שגיאה במהלך התמלול: ${error.message}`,
         variant: 'destructive',
       });
     }
@@ -279,42 +273,53 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           </div>
           
           <div className="grid gap-4">
-            {completedFiles.map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
-                <div className="flex items-center space-x-4 space-x-reverse">
-                  <div className="bg-gradient-to-r from-purple-100 to-purple-200 p-3 rounded-xl">
-                    <FileText className="w-5 h-5 text-purple-600" />
+            {completedFiles.map((file) => {
+              const isLargeFile = file.file.size > 49 * 1024 * 1024;
+              const estimatedChunks = Math.ceil(file.file.size / (49 * 1024 * 1024));
+              
+              return (
+                <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center space-x-4 space-x-reverse">
+                    <div className="bg-gradient-to-r from-purple-100 to-purple-200 p-3 rounded-xl">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-lg">
+                        {file.file.name}
+                      </p>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p>מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        {isLargeFile && (
+                          <div className="flex items-center text-blue-600">
+                            <Info className="w-4 h-4 ml-1" />
+                            <span>יפוצל ל-{estimatedChunks} חלקים לתמלול</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-lg">
-                      {file.file.name}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
+                  
+                  <Button
+                    size="lg"
+                    onClick={() => handleTranscribe(file)}
+                    disabled={transcriptions.find(t => t.fileId === file.id)?.isTranscribing}
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-3 rounded-xl shadow-lg"
+                  >
+                    {transcriptions.find(t => t.fileId === file.id)?.isTranscribing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                        מתמלל...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-5 h-5 ml-2" />
+                        תמלל עכשיו
+                      </>
+                    )}
+                  </Button>
                 </div>
-                
-                <Button
-                  size="lg"
-                  onClick={() => handleTranscribe(file)}
-                  disabled={transcriptions.find(t => t.fileId === file.id)?.isTranscribing}
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-3 rounded-xl shadow-lg"
-                >
-                  {transcriptions.find(t => t.fileId === file.id)?.isTranscribing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                      מתמלל...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-5 h-5 ml-2" />
-                      תמלל עכשיו
-                    </>
-                  )}
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       )}
@@ -342,7 +347,12 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-900 text-lg">{result.fileName}</h4>
-                      <p className="text-sm text-gray-600">תמלול ועיבוד אוטומטי</p>
+                      <div className="text-sm text-gray-600">
+                        <p>תמלול ועיבוד אוטומטי • {(result.fileSize / 1024 / 1024).toFixed(2)} MB</p>
+                        {result.wasChunked && (
+                          <p className="text-blue-600">נתמלל מ-{Math.ceil(result.fileSize / (49 * 1024 * 1024))} חלקים</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-3 space-x-reverse">
@@ -364,7 +374,9 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                   <div className="space-y-4 py-6">
                     <div className="flex items-center justify-center text-blue-600">
                       <Loader2 className="w-6 h-6 animate-spin ml-3" />
-                      <span className="text-lg font-medium">מתמלל את הקובץ...</span>
+                      <span className="text-lg font-medium">
+                        {result.wasChunked ? 'מתמלל קובץ גדול (פיצול לחלקים)...' : 'מתמלל את הקובץ...'}
+                      </span>
                     </div>
                     <div className="w-full">
                       <div className="flex justify-between text-sm text-gray-600 mb-2">
