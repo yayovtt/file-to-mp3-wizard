@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 
 export type AIProvider = 'chatgpt' | 'claude';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = 'https://jfzvushqvqnzmnebxlcg.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmenZ1c2hxdnFuem1uZWJ4bGNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5MDUyNzEsImV4cCI6MjA2MzQ4MTI3MX0.iy6t_nwqXfbkhU1pVcHe-YBfjfyIZ8JE0jx5rhnA0Wc';
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -17,7 +17,12 @@ export const processText = async (
   provider: AIProvider = 'chatgpt'
 ): Promise<string> => {
   try {
-    console.log('Calling Supabase Edge Function for text processing...');
+    console.log('Calling Supabase Edge Function for text processing...', {
+      provider,
+      separateMode,
+      promptsCount: prompts.length,
+      textLength: text.length
+    });
     
     const { data, error } = await supabase.functions.invoke('process-text', {
       body: {
@@ -34,13 +39,30 @@ export const processText = async (
       throw new Error(`שגיאה בעיבוד הטקסט: ${error.message}`);
     }
 
-    if (data.error) {
-      throw new Error(data.error);
+    if (data?.error) {
+      console.error('Processing error from Edge Function:', data.error);
+      throw new Error(`שגיאה בעיבוד הטקסט: ${data.error}`);
     }
 
+    if (!data?.result) {
+      console.error('No result from Edge Function:', data);
+      throw new Error('לא התקבלה תוצאה מהשרת');
+    }
+
+    console.log('Text processing completed successfully');
     return data.result;
   } catch (error) {
     console.error('Text processing error:', error);
-    throw new Error(`שגיאה בעיבוד הטקסט: ${error.message}`);
+    
+    // Provide more specific error messages
+    if (error.message?.includes('Failed to fetch')) {
+      throw new Error('שגיאה בחיבור לשרת. אנא נסה שוב.');
+    }
+    
+    if (error.message?.includes('API key')) {
+      throw new Error('בעיה עם מפתח ה-API. אנא בדוק את ההגדרות.');
+    }
+    
+    throw new Error(`שגיאה בעיבוד הטקסט: ${error.message || 'שגיאה לא ידועה'}`);
   }
 };
