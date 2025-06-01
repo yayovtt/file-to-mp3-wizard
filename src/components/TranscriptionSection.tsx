@@ -133,14 +133,20 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     ));
 
     try {
-      // Start progress simulation
-      const progressPromise = simulateProgress(transcriptionResult.fileId, 'processing', 4000);
+      // Simple progress tracking for text processing
+      const progressInterval = setInterval(() => {
+        setTranscriptions(prev => prev.map(t => 
+          t.fileId === transcriptionResult.fileId && t.isProcessing
+            ? { ...t, processingProgress: Math.min(t.processingProgress + 25, 90) }
+            : t
+        ));
+      }, 1000);
       
       // Start actual processing
-      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey);
+      const processedText = await processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey);
       
-      // Wait for both to complete
-      const [processedText] = await Promise.all([processingPromise, progressPromise]);
+      // Clear interval and complete progress
+      clearInterval(progressInterval);
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
