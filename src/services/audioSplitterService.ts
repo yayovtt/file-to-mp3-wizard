@@ -1,4 +1,3 @@
-
 interface AudioChunk {
   blob: Blob;
   startTime: number;
@@ -6,8 +5,8 @@ interface AudioChunk {
   chunkIndex: number;
 }
 
-export const splitAudioFile = async (file: File, maxSizeBytes: number = 25 * 1024 * 1024): Promise<AudioChunk[]> => {
-  // Reduced to 25MB to be very safe with encoding overhead
+export const splitAudioFile = async (file: File, maxSizeBytes: number = 15 * 1024 * 1024): Promise<AudioChunk[]> => {
+  // Reduced to 15MB to ensure compatibility with all audio formats and encoding overhead
   
   // If file is smaller than max size, return as single chunk
   if (file.size <= maxSizeBytes) {
@@ -28,8 +27,8 @@ export const splitAudioFile = async (file: File, maxSizeBytes: number = 25 * 102
         const arrayBuffer = e.target?.result as ArrayBuffer;
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         
-        // Calculate number of chunks needed based on file size - use more chunks for safety
-        const numberOfChunks = Math.ceil(file.size / maxSizeBytes) + 1; // Add extra chunk for safety
+        // Calculate number of chunks needed based on file size - use even more chunks for safety
+        const numberOfChunks = Math.ceil(file.size / maxSizeBytes) + 2; // Add 2 extra chunks for safety
         const chunkDuration = audioBuffer.duration / numberOfChunks;
         
         console.log(`Splitting into ${numberOfChunks} chunks, each ~${chunkDuration.toFixed(2)} seconds`);
