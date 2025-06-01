@@ -40,7 +40,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
   const handleTranscribe = async (file: FileItem) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
-    const isLargeFile = file.file.size > 15 * 1024 * 1024; // Updated to 15MB
+    const isLargeFile = file.file.size > 10 * 1024 * 1024; // Updated to 10MB
     
     if (existingIndex >= 0) {
       setTranscriptions(prev => prev.map((t, i) => 
@@ -67,7 +67,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
     try {
       if (isLargeFile) {
-        const estimatedChunks = Math.ceil(file.file.size / (15 * 1024 * 1024)) + 2;
+        const estimatedChunks = Math.ceil(file.file.size / (10 * 1024 * 1024)) + 3;
         toast({
           title: 'קובץ גדול זוהה',
           description: `הקובץ (${(file.file.size / 1024 / 1024).toFixed(1)}MB) יפוצל ל-${estimatedChunks} חלקים קטנים לתמלול`,
@@ -94,7 +94,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       ));
 
       const successMessage = isLargeFile 
-        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(file.file.size / (15 * 1024 * 1024)) + 2} חלקים)`
+        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(file.file.size / (10 * 1024 * 1024)) + 3} חלקים)`
         : `התמלול של ${file.file.name} הושלם בהצלחה`;
 
       toast({
@@ -281,8 +281,8 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           
           <div className="grid gap-4">
             {completedFiles.map((file) => {
-              const isLargeFile = file.file.size > 15 * 1024 * 1024; // Updated threshold
-              const estimatedChunks = Math.ceil(file.file.size / (15 * 1024 * 1024)) + 2; // Updated calculation
+              const isLargeFile = file.file.size > 10 * 1024 * 1024; // Updated threshold
+              const estimatedChunks = Math.ceil(file.file.size / (10 * 1024 * 1024)) + 3; // Updated calculation
               
               return (
                 <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
@@ -357,7 +357,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                       <div className="text-sm text-gray-600">
                         <p>תמלול ועיבוד אוטומטי • {(result.fileSize / 1024 / 1024).toFixed(2)} MB</p>
                         {result.wasChunked && (
-                          <p className="text-blue-600">נתמלל מ-{Math.ceil(result.fileSize / (15 * 1024 * 1024)) + 2} חלקים קטנים</p>
+                          <p className="text-blue-600">נתמלל מ-{Math.ceil(result.fileSize / (10 * 1024 * 1024)) + 3} חלקים קטנים</p>
                         )}
                       </div>
                     </div>
