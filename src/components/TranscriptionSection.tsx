@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -49,6 +48,10 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
     const mediaInfo = getMediaInfo(file.file);
     
+    console.log('Starting transcription for:', file.file.name);
+    console.log('Original file size:', (file.file.size / 1024 / 1024).toFixed(2), 'MB');
+    console.log('Media info:', mediaInfo);
+    
     if (existingIndex >= 0) {
       setTranscriptions(prev => prev.map((t, i) => 
         i === existingIndex ? { 
@@ -81,6 +84,8 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       
       // Extract audio from video if needed
       if (mediaInfo.isVideo) {
+        console.log('Video file detected, extracting audio...');
+        
         toast({
           title: 'מחלץ אודיו מהוידאו',
           description: `מחלץ אודיו מהקובץ ${file.file.name} (${mediaInfo.sizeInMB}MB)...`,
@@ -98,9 +103,14 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         const extractionResult = await extractAudioFromVideo(file.file);
         clearInterval(extractionInterval);
         
+        console.log('Audio extraction completed!');
+        console.log('Original size:', (extractionResult.originalSize / 1024 / 1024).toFixed(2), 'MB');
+        console.log('Extracted size:', (extractionResult.extractedSize / 1024 / 1024).toFixed(2), 'MB');
+        console.log('Compression ratio:', ((extractionResult.originalSize - extractionResult.extractedSize) / extractionResult.originalSize * 100).toFixed(1), '%');
+        
         // Create audio file from extracted blob
-        audioFile = new File([extractionResult.audioBlob], `${file.file.name}_audio.webm`, {
-          type: 'audio/webm'
+        audioFile = new File([extractionResult.audioBlob], `${file.file.name}_audio.wav`, {
+          type: 'audio/wav'
         });
         
         setTranscriptions(prev => prev.map(t => 
@@ -126,6 +136,9 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       // Now check if the audio file needs chunking
       const finalFileSize = audioFile.size;
       const isLargeFile = finalFileSize > 2 * 1024 * 1024;
+      
+      console.log('Final audio file size:', (finalFileSize / 1024 / 1024).toFixed(2), 'MB');
+      console.log('Needs chunking:', isLargeFile);
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === file.id 
