@@ -1,13 +1,15 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Loader2, Download, MessageSquare, Info } from 'lucide-react';
+import { FileText, Loader2, Download, MessageSquare, Info, Video, Music } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
 import { processText } from '@/services/textProcessingService';
+import { extractAudioFromVideo, isVideoFile, getMediaInfo } from '@/services/audioExtractionService';
 import { useToast } from '@/hooks/use-toast';
 import { FontControls } from '@/components/FontControls';
 import { TextProcessingOptions } from '@/components/TextProcessingOptions';
@@ -20,10 +22,15 @@ interface TranscriptionResult {
   processedOptions?: string[];
   isTranscribing: boolean;
   isProcessing: boolean;
+  isExtracting: boolean;
   transcriptionProgress: number;
   processingProgress: number;
+  extractionProgress: number;
   fileSize: number;
   wasChunked?: boolean;
+  wasExtracted?: boolean;
+  extractedSize?: number;
+  mediaType?: string;
 }
 
 interface TranscriptionSectionProps {
@@ -40,15 +47,17 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
   const handleTranscribe = async (file: FileItem) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
-    const isLargeFile = file.file.size > 2 * 1024 * 1024; // Updated to 2MB
+    const mediaInfo = getMediaInfo(file.file);
     
     if (existingIndex >= 0) {
       setTranscriptions(prev => prev.map((t, i) => 
         i === existingIndex ? { 
           ...t, 
-          isTranscribing: true, 
+          isTranscribing: true,
+          isExtracting: mediaInfo.isVideo,
           transcriptionProgress: 0,
-          wasChunked: isLargeFile
+          extractionProgress: 0,
+          mediaType: mediaInfo.type
         } : t
       ));
     } else {
@@ -58,25 +67,83 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         transcription: '',
         isTranscribing: true,
         isProcessing: false,
+        isExtracting: mediaInfo.isVideo,
         transcriptionProgress: 0,
         processingProgress: 0,
+        extractionProgress: 0,
         fileSize: file.file.size,
-        wasChunked: isLargeFile
+        mediaType: mediaInfo.type
       }]);
     }
 
     try {
-      if (isLargeFile) {
-        const estimatedChunks = Math.ceil(file.file.size / (2 * 1024 * 1024)) * 3; // Updated calculation
+      let audioFile = file.file;
+      
+      // Extract audio from video if needed
+      if (mediaInfo.isVideo) {
         toast({
-          title: 'קובץ גדול זוהה',
-          description: `הקובץ (${(file.file.size / 1024 / 1024).toFixed(1)}MB) יפוצל ל-${estimatedChunks} חלקים קטנים מאוד לתמלול`,
+          title: 'מחלץ אודיו מהוידאו',
+          description: `מחלץ אודיו מהקובץ ${file.file.name} (${mediaInfo.sizeInMB}MB)...`,
+        });
+        
+        // Simulate extraction progress
+        const extractionInterval = setInterval(() => {
+          setTranscriptions(prev => prev.map(t => 
+            t.fileId === file.id && t.isExtracting
+              ? { ...t, extractionProgress: Math.min(t.extractionProgress + 20, 90) }
+              : t
+          ));
+        }, 500);
+        
+        const extractionResult = await extractAudioFromVideo(file.file);
+        clearInterval(extractionInterval);
+        
+        // Create audio file from extracted blob
+        audioFile = new File([extractionResult.audioBlob], `${file.file.name}_audio.webm`, {
+          type: 'audio/webm'
+        });
+        
+        setTranscriptions(prev => prev.map(t => 
+          t.fileId === file.id 
+            ? { 
+                ...t, 
+                isExtracting: false, 
+                extractionProgress: 100,
+                wasExtracted: true,
+                extractedSize: extractionResult.extractedSize
+              }
+            : t
+        ));
+        
+        const compressionRatio = ((file.file.size - extractionResult.extractedSize) / file.file.size * 100).toFixed(1);
+        
+        toast({
+          title: 'חילוץ אודיו הושלם',
+          description: `האודיו חולץ בהצלחה! גודל קטן יותר ב-${compressionRatio}% (${(extractionResult.extractedSize / 1024 / 1024).toFixed(1)}MB)`,
         });
       }
       
-      // Use the new chunked transcription with progress callback
+      // Now check if the audio file needs chunking
+      const finalFileSize = audioFile.size;
+      const isLargeFile = finalFileSize > 2 * 1024 * 1024;
+      
+      setTranscriptions(prev => prev.map(t => 
+        t.fileId === file.id 
+          ? { ...t, wasChunked: isLargeFile }
+          : t
+      ));
+      
+      if (isLargeFile) {
+        const estimatedChunks = Math.ceil(finalFileSize / (2 * 1024 * 1024)) * 3;
+        toast({
+          title: 'קובץ אודיו גדול זוהה',
+          description: `האודיו (${(finalFileSize / 1024 / 1024).toFixed(1)}MB) יפוצל ל-${estimatedChunks} חלקים לתמלול`,
+        });
+      }
+      
+      // Transcribe the audio file
       const transcription = await transcribeAudio(
-        file.file, 
+        audioFile, 
         groqApiKey,
         (progress) => {
           setTranscriptions(prev => prev.map(t => 
@@ -93,8 +160,8 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           : t
       ));
 
-      const successMessage = isLargeFile 
-        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(file.file.size / (2 * 1024 * 1024)) * 3} חלקים קטנים מאוד)`
+      const successMessage = mediaInfo.isVideo 
+        ? `התמלול של ${file.file.name} הושלם בהצלחה (אודיו חולץ מהוידאו)`
         : `התמלול של ${file.file.name} הושלם בהצלחה`;
 
       toast({
@@ -105,7 +172,13 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       console.error('Transcription error:', error);
       setTranscriptions(prev => prev.map(t => 
         t.fileId === file.id 
-          ? { ...t, isTranscribing: false, transcriptionProgress: 0 }
+          ? { 
+              ...t, 
+              isTranscribing: false, 
+              isExtracting: false,
+              transcriptionProgress: 0,
+              extractionProgress: 0
+            }
           : t
       ));
       
@@ -255,11 +328,52 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           fontFamily={fontFamily}
           onFontSizeChange={setFontSize}
           onFontFamilyChange={setFontFamily}
-          onPrint={handlePrint}
-          onShare={handleShare}
-          onDownload={handleDownloadAll}
-          onEmail={handleEmail}
-          onCopy={handleCopy}
+          onPrint={() => window.print()}
+          onShare={() => {
+            const transcriptionsText = transcriptions
+              .map(result => `${result.fileName}:\n${result.transcription}${result.processedText ? `\n\nטקסט מעובד: ${result.processedText}` : ''}`)
+              .join('\n\n---\n\n');
+            
+            const whatsappText = encodeURIComponent(`תמלולים:\n\n${transcriptionsText}`);
+            const whatsappUrl = `https://wa.me/?text=${whatsappText}`;
+            window.open(whatsappUrl, '_blank');
+          }}
+          onDownload={() => {
+            transcriptions.forEach(result => {
+              if (result.transcription) {
+                setTimeout(() => downloadTranscription(result), 100);
+              }
+            });
+          }}
+          onEmail={() => {
+            const transcriptionsText = transcriptions
+              .map(result => `${result.fileName}:\n${result.transcription}${result.processedText ? `\n\nטקסט מעובד: ${result.processedText}` : ''}`)
+              .join('\n\n---\n\n');
+            
+            const subject = encodeURIComponent('תמלולים');
+            const body = encodeURIComponent(`תמלולים:\n\n${transcriptionsText}`);
+            const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+            window.open(mailtoUrl, '_blank');
+          }}
+          onCopy={async () => {
+            const transcriptionsText = transcriptions
+              .map(result => `${result.fileName}:\n${result.transcription}${result.processedText ? `\n\nטקסט מעובד: ${result.processedText}` : ''}`)
+              .join('\n\n---\n\n');
+            
+            try {
+              await navigator.clipboard.writeText(transcriptionsText);
+              toast({
+                title: 'הועתק בהצלחה',
+                description: 'הטקסט הועתק ללוח העריכה',
+              });
+            } catch (error) {
+              toast({
+                title: 'שגיאה בהעתקה',
+                description: 'לא ניתן להעתיק את הטקסט',
+                variant: 'destructive',
+              });
+            }
+          }}
         />
       )}
 
@@ -281,25 +395,37 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           
           <div className="grid gap-4">
             {completedFiles.map((file) => {
-              const isLargeFile = file.file.size > 2 * 1024 * 1024; // Updated threshold
-              const estimatedChunks = Math.ceil(file.file.size / (2 * 1024 * 1024)) * 3; // Updated calculation
+              const mediaInfo = getMediaInfo(file.file);
+              const isLargeFile = file.file.size > 2 * 1024 * 1024;
               
               return (
                 <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
                   <div className="flex items-center space-x-4 space-x-reverse">
                     <div className="bg-gradient-to-r from-purple-100 to-purple-200 p-3 rounded-xl">
-                      <FileText className="w-5 h-5 text-purple-600" />
+                      {mediaInfo.isVideo ? (
+                        <Video className="w-5 h-5 text-purple-600" />
+                      ) : mediaInfo.isAudio ? (
+                        <Music className="w-5 h-5 text-purple-600" />
+                      ) : (
+                        <FileText className="w-5 h-5 text-purple-600" />
+                      )}
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900 text-lg">
                         {file.file.name}
                       </p>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB</p>
-                        {isLargeFile && (
+                        <p>מוכן לתמלול • {mediaInfo.sizeInMB} MB • {mediaInfo.type}</p>
+                        {mediaInfo.isVideo && (
                           <div className="flex items-center text-blue-600">
                             <Info className="w-4 h-4 ml-1" />
-                            <span>יפוצל ל-{estimatedChunks} חלקים קטנים מאוד לתמלול</span>
+                            <span>יחולץ אודיו מהוידאו לפני התמלול</span>
+                          </div>
+                        )}
+                        {isLargeFile && !mediaInfo.isVideo && (
+                          <div className="flex items-center text-orange-600">
+                            <Info className="w-4 h-4 ml-1" />
+                            <span>יפוצל לחלקים קטנים לתמלול</span>
                           </div>
                         )}
                       </div>
@@ -315,7 +441,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                     {transcriptions.find(t => t.fileId === file.id)?.isTranscribing ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                        מתמלל...
+                        {transcriptions.find(t => t.fileId === file.id)?.isExtracting ? 'מחלץ אודיו...' : 'מתמלל...'}
                       </>
                     ) : (
                       <>
@@ -350,14 +476,23 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
                     <div className="bg-blue-100 p-2 rounded-lg ml-3">
-                      <FileText className="w-5 h-5 text-blue-600" />
+                      {result.mediaType === 'video' ? (
+                        <Video className="w-5 h-5 text-blue-600" />
+                      ) : result.mediaType === 'audio' ? (
+                        <Music className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      )}
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-900 text-lg">{result.fileName}</h4>
                       <div className="text-sm text-gray-600">
                         <p>תמלול ועיבוד אוטומטי • {(result.fileSize / 1024 / 1024).toFixed(2)} MB</p>
+                        {result.wasExtracted && (
+                          <p className="text-green-600">אודיו חולץ מהוידאו • {(result.extractedSize! / 1024 / 1024).toFixed(1)}MB</p>
+                        )}
                         {result.wasChunked && (
-                          <p className="text-blue-600">נתמלל מ-{Math.ceil(result.fileSize / (2 * 1024 * 1024)) * 3} חלקים קטנים מאוד</p>
+                          <p className="text-blue-600">נתמלל מחלקים קטנים</p>
                         )}
                       </div>
                     </div>
@@ -377,12 +512,28 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                   </div>
                 </div>
                 
-                {result.isTranscribing && (
+                {result.isExtracting && (
+                  <div className="space-y-4 py-6">
+                    <div className="flex items-center justify-center text-blue-600">
+                      <Loader2 className="w-6 h-6 animate-spin ml-3" />
+                      <span className="text-lg font-medium">מחלץ אודיו מהוידאו...</span>
+                    </div>
+                    <div className="w-full">
+                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>התקדמות חילוץ</span>
+                        <span>{Math.round(result.extractionProgress)}%</span>
+                      </div>
+                      <Progress value={result.extractionProgress} className="h-3" />
+                    </div>
+                  </div>
+                )}
+                
+                {result.isTranscribing && !result.isExtracting && (
                   <div className="space-y-4 py-6">
                     <div className="flex items-center justify-center text-blue-600">
                       <Loader2 className="w-6 h-6 animate-spin ml-3" />
                       <span className="text-lg font-medium">
-                        {result.wasChunked ? 'מתמלל קובץ גדול (פיצול לחלקים קטנים מאוד)...' : 'מתמלל את הקובץ...'}
+                        {result.wasChunked ? 'מתמלל מחלקים קטנים...' : 'מתמלל את הקובץ...'}
                       </span>
                     </div>
                     <div className="w-full">
