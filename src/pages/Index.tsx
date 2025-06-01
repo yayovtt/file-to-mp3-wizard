@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileUpload } from '@/components/FileUpload';
 import { ConversionStatus } from '@/components/ConversionStatus';
 import { DownloadSection } from '@/components/DownloadSection';
-import { Music, Download, Sparkles } from 'lucide-react';
+import { Music, Video, Download, Sparkles } from 'lucide-react';
 
 export interface FileItem {
   id: string;
@@ -77,16 +77,19 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center mb-4 space-x-2">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-2xl">
-              <Music className="w-8 h-8 text-white" />
+              <Music className="w-6 h-6 text-white" />
+            </div>
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-2xl">
+              <Video className="w-6 h-6 text-white" />
             </div>
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            המרת קבצים ל-MP3
+            המרת אודיו ווידאו ל-MP3
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            המר בקלות כל קובץ אודיו ל-MP3 באיכות גבוהה. תומך בכל הפורמטים הפופולריים
+            המר בקלות כל קובץ אודיו או וידאו ל-MP3 באיכות גבוהה. הפרד קול מסרטונים והמר לאודיו
           </p>
         </div>
 
@@ -158,12 +161,27 @@ const Index = () => {
             {/* Supported Formats */}
             <Card className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
               <h3 className="text-lg font-semibold mb-4 text-gray-800">פורמטים נתמכים</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {['WAV', 'FLAC', 'AAC', 'OGG', 'M4A', 'WMA'].map(format => (
-                  <Badge key={format} variant="secondary" className="justify-center">
-                    {format}
-                  </Badge>
-                ))}
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">אודיו:</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['WAV', 'FLAC', 'AAC', 'OGG', 'M4A', 'WMA'].map(format => (
+                      <Badge key={format} variant="secondary" className="justify-center">
+                        {format}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">וידאו:</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['MP4', 'AVI', 'MOV', 'MKV', 'WMV', 'WebM'].map(format => (
+                      <Badge key={format} variant="secondary" className="justify-center bg-purple-100 text-purple-700">
+                        {format}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               </div>
             </Card>
           </div>

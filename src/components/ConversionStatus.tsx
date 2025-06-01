@@ -1,7 +1,7 @@
 
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { FileAudio, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { FileAudio, FileVideo, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
 interface ConversionStatusProps {
@@ -9,33 +9,49 @@ interface ConversionStatusProps {
 }
 
 export const ConversionStatus = ({ files }: ConversionStatusProps) => {
-  const getStatusIcon = (status: FileItem['status']) => {
+  const getStatusIcon = (status: FileItem['status'], isVideo: boolean) => {
+    const iconProps = "w-4 h-4";
+    const baseIcon = isVideo ? FileVideo : FileAudio;
+    
     switch (status) {
       case 'pending':
-        return <FileAudio className="w-4 h-4 text-gray-500" />;
+        return <baseIcon className={`${iconProps} text-gray-500`} />;
       case 'converting':
-        return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+        return <Loader2 className={`${iconProps} text-blue-500 animate-spin`} />;
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className={`${iconProps} text-green-500`} />;
       case 'error':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <AlertCircle className={`${iconProps} text-red-500`} />;
     }
   };
 
   const getStatusBadge = (status: FileItem['status']) => {
-    const variants = {
-      pending: { variant: 'secondary' as const, text: 'ממתין' },
-      converting: { variant: 'default' as const, text: 'מתמיר' },
-      completed: { variant: 'default' as const, text: 'הושלם', className: 'bg-green-500 hover:bg-green-600' },
-      error: { variant: 'destructive' as const, text: 'שגיאה' },
-    };
-    
-    const config = variants[status];
-    return (
-      <Badge variant={config.variant} className={config.className}>
-        {config.text}
-      </Badge>
-    );
+    switch (status) {
+      case 'pending':
+        return (
+          <Badge variant="secondary">
+            ממתין
+          </Badge>
+        );
+      case 'converting':
+        return (
+          <Badge variant="default">
+            מתמיר
+          </Badge>
+        );
+      case 'completed':
+        return (
+          <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white">
+            הושלם
+          </Badge>
+        );
+      case 'error':
+        return (
+          <Badge variant="destructive">
+            שגיאה
+          </Badge>
+        );
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -46,19 +62,25 @@ export const ConversionStatus = ({ files }: ConversionStatusProps) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const isVideoFile = (filename: string) => {
+    return ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm', '.m4v'].some(ext => 
+      filename.toLowerCase().endsWith(ext)
+    );
+  };
+
   return (
     <div className="space-y-4">
       {files.map((file) => (
         <div key={file.id} className="p-4 bg-gray-50 rounded-lg border">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              {getStatusIcon(file.status)}
+              {getStatusIcon(file.status, isVideoFile(file.file.name))}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900 truncate">
                   {file.file.name}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {formatFileSize(file.file.size)}
+                  {formatFileSize(file.file.size)} • {isVideoFile(file.file.name) ? 'וידאו → MP3' : 'אודיו → MP3'}
                 </p>
               </div>
             </div>
