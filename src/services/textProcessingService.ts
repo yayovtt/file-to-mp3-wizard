@@ -1,4 +1,3 @@
-
 interface ChatGPTMessage {
   role: 'user' | 'system' | 'assistant';
   content: string;
@@ -25,6 +24,61 @@ interface ClaudeResponse {
 
 export type AIProvider = 'chatgpt' | 'claude';
 
+// Function to check API status
+export const checkAPIStatus = async (provider: AIProvider, apiKey: string): Promise<{ isValid: boolean; error?: string }> => {
+  try {
+    if (provider === 'chatgpt') {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+      });
+      
+      if (response.ok) {
+        return { isValid: true };
+      } else {
+        const errorText = await response.text();
+        return { isValid: false, error: `ChatGPT API Error: ${response.status} - ${errorText}` };
+      }
+    } else if (provider === 'claude') {
+      // For Claude, we'll try a minimal request to check if the API is accessible
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-3-haiku-20240307',
+          max_tokens: 10,
+          messages: [{ role: 'user', content: 'test' }],
+        }),
+      });
+      
+      if (response.ok || response.status === 400) { // 400 might be expected for minimal request
+        return { isValid: true };
+      } else {
+        const errorText = await response.text();
+        return { isValid: false, error: `Claude API Error: ${response.status} - ${errorText}` };
+      }
+    }
+  } catch (error) {
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      return { 
+        isValid: false, 
+        error: provider === 'claude' 
+          ? 'לא ניתן להתחבר ל-Claude API. יכול להיות שיש בעיית רשת או שה-API חסום.'
+          : 'לא ניתן להתחבר ל-ChatGPT API. יכול להיות שיש בעיית רשת.'
+      };
+    }
+    return { isValid: false, error: `שגיאה לא צפויה: ${error.message}` };
+  }
+  
+  return { isValid: false, error: 'ספק API לא נתמך' };
+};
+
 export const processText = async (
   text: string, 
   prompts: string[], 
@@ -33,20 +87,24 @@ export const processText = async (
   separateMode: boolean = false,
   provider: AIProvider = 'chatgpt'
 ): Promise<string> => {
+  // Check API status first
+  const statusCheck = await checkAPIStatus(provider, apiKey);
+  if (!statusCheck.isValid) {
+    throw new Error(statusCheck.error || `${provider} API לא זמין`);
+  }
+
   let combinedPrompt = '';
   
   if (prompts.length === 1) {
     combinedPrompt = prompts[0];
   } else {
     if (separateMode) {
-      // Process each option separately with clear headers
       combinedPrompt = `בצע את הפעולות הבאות על הטקסט, כל פעולה בנפרד עם כותרת ברורה:
 
 ${prompts.map((prompt, index) => `${index + 1}. ${selectedOptions[index]}: ${prompt}`).join('\n')}
 
 חשוב: הצג את התוצאה עם כותרת ברורה לכל סוג עיבוד (למשל "תיקון שגיאות:", "עריכה:", וכו'), והפרד בין הסעיפים בקו מפריד או רווח.`;
     } else {
-      // Create a comprehensive prompt that applies all selected processing options together
       combinedPrompt = `בצע את כל הפעולות הבאות על הטקסט באופן משולב ומקיף, והחזר טקסט אחד מעובד שכולל את כל השיפורים:
 
 ${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
@@ -60,7 +118,6 @@ ${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
     : 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.';
 
   if (provider === 'claude') {
-    // Use the provided Claude API key
     const claudeApiKey = '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';
     return await processWithClaude(combinedPrompt, text, systemMessage, claudeApiKey);
   } else {
@@ -173,7 +230,7 @@ const processWithClaude = async (
     console.error('Claude API Detailed Error:', error);
     
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('לא ניתן להתחבר ל-Claude API. יכול להיות שיש בעיית רשת או שה-API חסום. נסה להשתמש ב-ChatGPT במקום.');
+      throw new Error('לא ניתן להתחבר ל-Claude API. ה-API עלול להיות חסום במקום הנוכחי שלך. נסה להשתמש ב-ChatGPT במקום, או בדוק את החיבור לאינטרנט.');
     }
     
     throw error;
