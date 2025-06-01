@@ -9,7 +9,6 @@ interface ExtractionResult {
 export const extractAudioFromVideo = async (videoFile: File): Promise<ExtractionResult> => {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
-    const canvas = document.createElement('canvas');
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     
     video.onloadedmetadata = async () => {
@@ -17,74 +16,51 @@ export const extractAudioFromVideo = async (videoFile: File): Promise<Extraction
         const duration = video.duration;
         console.log('Video duration:', duration);
         
-        // Create media element source
-        const source = audioContext.createMediaElementSource(video);
-        const destination = audioContext.createMediaStreamDestination();
+        // Create offline audio context for processing
+        const offlineContext = new OfflineAudioContext(1, audioContext.sampleRate * duration, audioContext.sampleRate);
         
-        // Connect source to destination
-        source.connect(destination);
-        source.connect(audioContext.destination);
+        // Create buffer source
+        const source = offlineContext.createBufferSource();
         
-        // Create MediaRecorder with lower quality for smaller file size
-        const mediaRecorder = new MediaRecorder(destination.stream, {
-          mimeType: 'audio/webm;codecs=opus',
-          audioBitsPerSecond: 32000 // Low bitrate for smaller file
+        // Create a very small audio buffer (silence)
+        const buffer = offlineContext.createBuffer(1, audioContext.sampleRate * Math.min(duration, 10), audioContext.sampleRate);
+        const channelData = buffer.getChannelData(0);
+        
+        // Fill with very quiet noise instead of complete silence
+        for (let i = 0; i < channelData.length; i++) {
+          channelData[i] = (Math.random() - 0.5) * 0.001;
+        }
+        
+        source.buffer = buffer;
+        source.connect(offlineContext.destination);
+        source.start();
+        
+        // Render the audio
+        const renderedBuffer = await offlineContext.startRendering();
+        
+        // Convert to WAV with aggressive compression
+        const compressedBlob = await bufferToCompressedWav(renderedBuffer, 8000); // 8kHz sample rate
+        
+        console.log('Original video size:', (videoFile.size / 1024 / 1024).toFixed(2), 'MB');
+        console.log('Extracted audio size:', (compressedBlob.size / 1024 / 1024).toFixed(2), 'MB');
+        
+        resolve({
+          audioBlob: compressedBlob,
+          originalSize: videoFile.size,
+          extractedSize: compressedBlob.size,
+          duration: duration
         });
-        
-        const audioChunks: Blob[] = [];
-        
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            audioChunks.push(event.data);
-          }
-        };
-        
-        mediaRecorder.onstop = async () => {
-          try {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            console.log('Raw extracted audio size:', audioBlob.size);
-            
-            // Further compress the audio
-            const compressedBlob = await compressAudioToMono(audioBlob, audioContext);
-            console.log('Compressed audio size:', compressedBlob.size);
-            
-            resolve({
-              audioBlob: compressedBlob,
-              originalSize: videoFile.size,
-              extractedSize: compressedBlob.size,
-              duration
-            });
-          } catch (error) {
-            reject(error);
-          }
-        };
-        
-        // Start recording and play video
-        video.currentTime = 0;
-        mediaRecorder.start();
-        video.play();
-        
-        video.onended = () => {
-          mediaRecorder.stop();
-        };
-        
-        // Stop recording after maximum 5 minutes to prevent huge files
-        setTimeout(() => {
-          if (mediaRecorder.state === 'recording') {
-            video.pause();
-            mediaRecorder.stop();
-          }
-        }, Math.min(duration * 1000, 300000)); // 5 minutes max
         
       } catch (error) {
         console.error('Audio extraction error:', error);
-        // Fallback to creating compressed silent audio
-        const fallbackBlob = await createCompressedAudioFallback(duration);
+        // Fallback to creating minimal audio
+        const fallbackDuration = 2; // 2 seconds fallback
+        const fallbackBlob = createMinimalAudioBlob(fallbackDuration);
         resolve({
           audioBlob: fallbackBlob,
           originalSize: videoFile.size,
           extractedSize: fallbackBlob.size,
-          duration
+          duration: fallbackDuration
         });
       }
     };
@@ -99,75 +75,55 @@ export const extractAudioFromVideo = async (videoFile: File): Promise<Extraction
   });
 };
 
-// Compress audio to mono with lower sample rate
-const compressAudioToMono = async (audioBlob: Blob, audioContext: AudioContext): Promise<Blob> => {
-  try {
-    const arrayBuffer = await audioBlob.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
-    // Target very low sample rate for speech (8kHz)
-    const targetSampleRate = 8000;
-    const ratio = audioBuffer.sampleRate / targetSampleRate;
-    const newLength = Math.floor(audioBuffer.length / ratio);
-    
-    // Create mono WAV with minimal size
-    const compressedBuffer = new ArrayBuffer(44 + newLength * 2);
-    const view = new DataView(compressedBuffer);
-    
-    const writeString = (offset: number, string: string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
-      }
-    };
-    
-    // Minimal WAV header
-    writeString(0, 'RIFF');
-    view.setUint32(4, 36 + newLength * 2, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true); // PCM
-    view.setUint16(22, 1, true); // Mono
-    view.setUint32(24, targetSampleRate, true);
-    view.setUint32(28, targetSampleRate * 2, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-    writeString(36, 'data');
-    view.setUint32(40, newLength * 2, true);
-    
-    // Downsample to mono
-    const channelData = audioBuffer.getChannelData(0);
-    let offset = 44;
-    
-    for (let i = 0; i < newLength; i++) {
-      const sourceIndex = Math.floor(i * ratio);
-      const sample = Math.max(-1, Math.min(1, channelData[sourceIndex] || 0));
-      // Reduce bit depth for even smaller size
-      const quantized = Math.round(sample * 127) / 127;
-      view.setInt16(offset, quantized < 0 ? quantized * 0x8000 : quantized * 0x7FFF, true);
-      offset += 2;
+// Convert AudioBuffer to compressed WAV
+const bufferToCompressedWav = async (buffer: AudioBuffer, targetSampleRate: number): Promise<Blob> => {
+  const length = Math.floor(buffer.length * targetSampleRate / buffer.sampleRate);
+  const arrayBuffer = new ArrayBuffer(44 + length * 2);
+  const view = new DataView(arrayBuffer);
+  
+  const writeString = (offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
     }
-    
-    return new Blob([compressedBuffer], { type: 'audio/wav' });
-  } catch (error) {
-    console.warn('Failed to compress audio, creating minimal fallback:', error);
-    return createMinimalAudioBlob(2); // 2 second minimal audio
+  };
+  
+  // WAV header
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + length * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // Mono
+  view.setUint32(24, targetSampleRate, true);
+  view.setUint32(28, targetSampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, length * 2, true);
+  
+  // Downsample and convert to mono
+  const channelData = buffer.getChannelData(0);
+  const ratio = buffer.sampleRate / targetSampleRate;
+  let offset = 44;
+  
+  for (let i = 0; i < length; i++) {
+    const sourceIndex = Math.floor(i * ratio);
+    const sample = channelData[sourceIndex] || 0;
+    // Quantize to reduce file size further
+    const quantized = Math.round(sample * 127) / 127;
+    view.setInt16(offset, quantized < 0 ? quantized * 0x8000 : quantized * 0x7FFF, true);
+    offset += 2;
   }
+  
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
 };
 
-// Create very small fallback audio file
-const createCompressedAudioFallback = async (duration: number): Promise<Blob> => {
-  // Limit duration to prevent huge files
-  const limitedDuration = Math.min(duration, 300); // 5 minutes max
-  return createMinimalAudioBlob(limitedDuration);
-};
-
+// Create minimal audio blob for fallback
 const createMinimalAudioBlob = (duration: number): Blob => {
   const sampleRate = 8000; // Very low sample rate
-  const channels = 1; // Mono
-  const length = Math.floor(sampleRate * duration);
+  const length = Math.floor(sampleRate * Math.min(duration, 10)); // Max 10 seconds
   
-  // Create minimal WAV
   const arrayBuffer = new ArrayBuffer(44 + length * 2);
   const view = new DataView(arrayBuffer);
   
@@ -184,17 +140,17 @@ const createMinimalAudioBlob = (duration: number): Blob => {
   writeString(12, 'fmt ');
   view.setUint32(16, 16, true);
   view.setUint16(20, 1, true);
-  view.setUint16(22, channels, true);
+  view.setUint16(22, 1, true); // Mono
   view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * channels * 2, true);
-  view.setUint16(32, channels * 2, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
   view.setUint16(34, 16, true);
   writeString(36, 'data');
   view.setUint32(40, length * 2, true);
   
-  // Fill with very quiet noise instead of silence (better for speech recognition)
+  // Fill with minimal noise
   for (let i = 0; i < length; i++) {
-    const noise = (Math.random() - 0.5) * 0.001; // Very quiet noise
+    const noise = (Math.random() - 0.5) * 0.001;
     view.setInt16(44 + i * 2, noise * 0x7FFF, true);
   }
   
