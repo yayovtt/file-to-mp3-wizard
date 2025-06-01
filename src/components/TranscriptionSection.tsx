@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -37,6 +38,34 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const [fontSize, setFontSize] = useState(16);
   const [fontFamily, setFontFamily] = useState('Arial');
   const { toast } = useToast();
+
+  // Progress simulation helper function
+  const simulateProgress = (fileId: string, type: 'processing', duration: number): Promise<void> => {
+    return new Promise((resolve) => {
+      const steps = 20;
+      const stepDuration = duration / steps;
+      let currentStep = 0;
+
+      const updateProgress = () => {
+        currentStep++;
+        const progress = (currentStep / steps) * 100;
+        
+        setTranscriptions(prev => prev.map(t => 
+          t.fileId === fileId 
+            ? { ...t, processingProgress: Math.min(progress, 100) }
+            : t
+        ));
+
+        if (currentStep < steps) {
+          setTimeout(updateProgress, stepDuration);
+        } else {
+          resolve();
+        }
+      };
+
+      updateProgress();
+    });
+  };
 
   const handleTranscribe = async (file: FileItem) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
@@ -289,12 +318,6 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                       </p>
                       <div className="text-sm text-gray-600 space-y-1">
                         <p>מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB</p>
-                        {isLargeFile && (
-                          <div className="flex items-center text-blue-600">
-                            <Info className="w-4 h-4 ml-1" />
-                            <span>יפוצל ל-{estimatedChunks} חלקים לתמלול</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -349,9 +372,6 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                       <h4 className="font-bold text-gray-900 text-lg">{result.fileName}</h4>
                       <div className="text-sm text-gray-600">
                         <p>תמלול ועיבוד אוטומטי • {(result.fileSize / 1024 / 1024).toFixed(2)} MB</p>
-                        {result.wasChunked && (
-                          <p className="text-blue-600">נתמלל מ-{Math.ceil(result.fileSize / (49 * 1024 * 1024))} חלקים</p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -374,9 +394,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                   <div className="space-y-4 py-6">
                     <div className="flex items-center justify-center text-blue-600">
                       <Loader2 className="w-6 h-6 animate-spin ml-3" />
-                      <span className="text-lg font-medium">
-                        {result.wasChunked ? 'מתמלל קובץ גדול (פיצול לחלקים)...' : 'מתמלל את הקובץ...'}
-                      </span>
+                      <span className="text-lg font-medium">מתמלל את הקובץ...</span>
                     </div>
                     <div className="w-full">
                       <div className="flex justify-between text-sm text-gray-600 mb-2">
