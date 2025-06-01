@@ -23,13 +23,18 @@ export const processText = async (
   if (prompts.length === 1) {
     combinedPrompt = prompts[0];
   } else {
-    combinedPrompt = `בצע את הפעולות הבאות על הטקסט:\n${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}\n\nהחזר את התוצאה המעובדת עם כותרות ברורות לכל סוג עיבוד:`;
+    // Create a comprehensive prompt that applies all selected processing options together
+    combinedPrompt = `בצע את כל הפעולות הבאות על הטקסט באופן משולב ומקיף, והחזר טקסט אחד מעובד שכולל את כל השיפורים:
+
+${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
+
+חשוב: אל תפצל את התוצאה לחלקים נפרדים. החזר טקסט אחד רציף שעבר את כל העיבודים הנדרשים יחד.`;
   }
 
   const messages: ChatGPTMessage[] = [
     {
       role: 'system',
-      content: 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. בצע את המשימות המבוקשות בצורה מקצועית ואיכותית.',
+      content: 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.',
     },
     {
       role: 'user',
