@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { NavigationTabs } from '@/components/NavigationTabs';
 import { Music, Video } from 'lucide-react';
+import { compressAudio } from '@/services/audioCompressionService';
 
 export interface FileItem {
   id: string;
@@ -11,6 +11,8 @@ export interface FileItem {
   status: 'pending' | 'converting' | 'completed' | 'error';
   progress: number;
   convertedUrl?: string;
+  originalSize?: number;
+  compressedSize?: number;
 }
 
 const Index = () => {
@@ -23,31 +25,56 @@ const Index = () => {
       file,
       status: 'pending' as const,
       progress: 0,
+      originalSize: file.size,
     }));
     setFiles(prev => [...prev, ...newFiles]);
   };
 
   const simulateConversion = async (fileId: string) => {
+    const fileItem = files.find(f => f.id === fileId);
+    if (!fileItem) return;
+
     const updateProgress = (progress: number) => {
       setFiles(prev => prev.map(f => 
         f.id === fileId 
-          ? { ...f, progress, status: progress === 100 ? 'completed' : 'converting' }
+          ? { ...f, progress, status: progress === 100 ? 'converting' : 'converting' }
           : f
       ));
     };
 
-    // Simulate conversion progress
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      updateProgress(i);
-    }
+    try {
+      // Simulate conversion progress
+      for (let i = 0; i <= 80; i += 20) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        updateProgress(i);
+      }
 
-    // Create a mock converted URL (in real app, this would be the actual converted file)
-    setFiles(prev => prev.map(f => 
-      f.id === fileId 
-        ? { ...f, convertedUrl: URL.createObjectURL(f.file) }
-        : f
-    ));
+      // Actually compress the audio
+      const compressedFile = await compressAudio(fileItem.file);
+      
+      // Final progress update
+      updateProgress(100);
+
+      // Create converted URL and update file info
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { 
+              ...f, 
+              status: 'completed',
+              convertedUrl: URL.createObjectURL(compressedFile),
+              compressedSize: compressedFile.size,
+              file: compressedFile
+            }
+          : f
+      ));
+    } catch (error) {
+      console.error('Conversion error:', error);
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: 'error' }
+          : f
+      ));
+    }
   };
 
   const handleConvertAll = async () => {
