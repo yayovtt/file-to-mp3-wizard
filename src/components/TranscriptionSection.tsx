@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -164,7 +163,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const completedFiles = files.filter(f => f.status === 'completed');
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir="rtl">
       {/* Font Controls */}
       {transcriptions.length > 0 && (
         <FontControls
@@ -180,16 +179,16 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
       {/* Files Ready for Transcription */}
       {completedFiles.length > 0 && (
-        <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-lg border-0 rounded-xl">
+        <Card className="p-8 bg-gradient-to-br from-purple-50 to-pink-50 backdrop-blur-sm shadow-lg border-2 border-purple-200 rounded-xl">
           <div className="flex items-center mb-6">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl mr-4">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl ml-4">
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-800">קבצים מוכנים לתמלול</h3>
               <p className="text-gray-600 text-sm">המר את הקבצים שלך לטקסט באמצעות AI מתקדם</p>
             </div>
-            <Badge variant="secondary" className="mr-4 px-4 py-2 text-lg">
+            <Badge variant="secondary" className="ml-4 px-4 py-2 text-lg">
               {completedFiles.length}
             </Badge>
           </div>
@@ -197,7 +196,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           <div className="grid gap-4">
             {completedFiles.map((file) => (
               <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
-                <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                <div className="flex items-center space-x-4 space-x-reverse">
                   <div className="bg-gradient-to-r from-purple-100 to-purple-200 p-3 rounded-xl">
                     <FileText className="w-5 h-5 text-purple-600" />
                   </div>
@@ -239,7 +238,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       {transcriptions.length > 0 && (
         <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-lg border-0 rounded-xl">
           <div className="flex items-center mb-6">
-            <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl mr-4">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl ml-4">
               <MessageSquare className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -253,7 +252,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
               <div key={result.fileId} className="border border-gray-200 rounded-xl p-6 bg-gradient-to-r from-gray-50 to-blue-50 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
-                    <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                    <div className="bg-blue-100 p-2 rounded-lg ml-3">
                       <FileText className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
@@ -261,7 +260,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                       <p className="text-sm text-gray-600">תמלול וסיכום אוטומטי</p>
                     </div>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 space-x-reverse">
                     {result.transcription && !result.summary && !result.isSummarizing && (
                       <Button
                         size="lg"
@@ -312,8 +311,9 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                       <Textarea
                         value={result.transcription}
                         readOnly
-                        style={{ fontSize: `${fontSize}px`, fontFamily }}
+                        style={{ fontSize: `${fontSize}px`, fontFamily, textAlign: 'right' }}
                         className="min-h-[150px] resize-none leading-relaxed p-4 bg-white border-2 border-gray-200 rounded-lg"
+                        dir="rtl"
                       />
                     </div>
                     
@@ -332,8 +332,9 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                         <Textarea
                           value={result.summary}
                           readOnly
-                          style={{ fontSize: `${fontSize}px`, fontFamily }}
+                          style={{ fontSize: `${fontSize}px`, fontFamily, textAlign: 'right' }}
                           className="min-h-[120px] resize-none leading-relaxed p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg"
+                          dir="rtl"
                         />
                       </div>
                     )}

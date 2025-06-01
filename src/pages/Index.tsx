@@ -69,11 +69,11 @@ const Index = () => {
   const pendingFiles = files.filter(f => f.status === 'pending');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" dir="rtl">
       <div className="container mx-auto px-6 py-12 max-w-7xl">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="flex items-center justify-center mb-6 space-x-4">
+          <div className="flex items-center justify-center mb-6 space-x-4 space-x-reverse">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-3xl shadow-lg">
               <Music className="w-8 h-8 text-white" />
             </div>
@@ -92,19 +92,38 @@ const Index = () => {
           </p>
         </div>
 
+        {/* Navigation Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <Card className="p-8 text-center bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
+            <div className="flex items-center justify-center mb-4">
+              <Music className="w-12 h-12 text-white" />
+            </div>
+            <h3 className="text-3xl font-bold mb-3">המרת קבצים</h3>
+            <p className="text-blue-100 text-lg">המר קבצי אודיו ווידאו ל-MP3</p>
+          </Card>
+          
+          <Card className="p-8 text-center bg-gradient-to-br from-purple-500 to-pink-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
+            <div className="flex items-center justify-center mb-4">
+              <Video className="w-12 h-12 text-white" />
+            </div>
+            <h3 className="text-3xl font-bold mb-3">תמלול</h3>
+            <p className="text-purple-100 text-lg">תמלול וסיכום אוטומטי בעברית</p>
+          </Card>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <Card className="p-8 text-center bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
-            <div className="text-4xl font-bold mb-3">{files.length}</div>
-            <div className="text-blue-100 text-lg">קבצים בסך הכל</div>
-          </Card>
-          <Card className="p-8 text-center bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
-            <div className="text-4xl font-bold mb-3">{pendingFiles.length}</div>
-            <div className="text-purple-100 text-lg">ממתינים להמרה</div>
-          </Card>
           <Card className="p-8 text-center bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+            <div className="text-4xl font-bold mb-3">{files.length}</div>
+            <div className="text-green-100 text-lg">קבצים בסך הכל</div>
+          </Card>
+          <Card className="p-8 text-center bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+            <div className="text-4xl font-bold mb-3">{pendingFiles.length}</div>
+            <div className="text-orange-100 text-lg">ממתינים להמרה</div>
+          </Card>
+          <Card className="p-8 text-center bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
             <div className="text-4xl font-bold mb-3">{completedFiles.length}</div>
-            <div className="text-green-100 text-lg">הושלמו</div>
+            <div className="text-emerald-100 text-lg">הושלמו</div>
           </Card>
         </div>
 
