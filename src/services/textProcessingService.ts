@@ -115,33 +115,39 @@ const processWithClaude = async (
     ? 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד בנפרד, הצג כל תוצאה עם כותרת ברורה והפרד בין הסעיפים.'
     : 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.';
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 2000,
-      system: systemMessage,
-      messages: [
-        {
-          role: 'user',
-          content: `${combinedPrompt}\n\nטקסט לעיבוד:\n\n${text}`,
-        },
-      ],
-    }),
-  });
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 2000,
+        system: systemMessage,
+        messages: [
+          {
+            role: 'user',
+            content: `${combinedPrompt}\n\nטקסט לעיבוד:\n\n${text}`,
+          },
+        ],
+      }),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Claude API Error:', errorText);
-    throw new Error(`Claude processing failed: ${response.statusText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Claude API Error:', errorText);
+      throw new Error(`Claude processing failed: ${response.statusText}`);
+    }
+
+    const result: ClaudeResponse = await response.json();
+    return result.content[0].text;
+  } catch (error) {
+    console.error('Claude fetch error:', error);
+    // Fallback to ChatGPT if Claude fails
+    console.log('Falling back to ChatGPT due to Claude error');
+    throw new Error(`Claude API לא זמין כרגע. נסה שוב או השתמש ב-ChatGPT`);
   }
-
-  const result: ClaudeResponse = await response.json();
-  return result.content[0].text;
 };
