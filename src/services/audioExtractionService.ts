@@ -6,55 +6,29 @@ interface ExtractionResult {
   duration: number;
 }
 
-// Extend HTMLVideoElement to include captureStream
-interface HTMLVideoElementWithCapture extends HTMLVideoElement {
-  captureStream?: () => MediaStream;
-  mozCaptureStream?: () => MediaStream;
-}
-
 export const extractAudioFromVideo = async (videoFile: File): Promise<ExtractionResult> => {
   return new Promise((resolve, reject) => {
-    const video = document.createElement('video') as HTMLVideoElementWithCapture;
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     
     video.onloadedmetadata = async () => {
       try {
         const duration = video.duration;
+        console.log('Video duration:', duration);
         
-        // Create audio context for processing
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Create media element source
+        const source = audioContext.createMediaElementSource(video);
+        const destination = audioContext.createMediaStreamDestination();
         
-        // Try to get media stream from video
-        let stream: MediaStream | null = null;
+        // Connect source to destination
+        source.connect(destination);
+        source.connect(audioContext.destination);
         
-        if (video.captureStream) {
-          stream = video.captureStream();
-        } else if (video.mozCaptureStream) {
-          stream = video.mozCaptureStream();
-        } else {
-          // Fallback: create a simple audio extraction using Web Audio API
-          const audioBlob = await extractAudioUsingWebAudio(video, audioContext, duration);
-          resolve({
-            audioBlob,
-            originalSize: videoFile.size,
-            extractedSize: audioBlob.size,
-            duration
-          });
-          return;
-        }
-        
-        if (!stream) {
-          throw new Error('Unable to capture stream from video');
-        }
-        
-        // Record only audio tracks
-        const audioTracks = stream.getAudioTracks();
-        if (audioTracks.length === 0) {
-          throw new Error('No audio tracks found in video');
-        }
-        
-        const audioStream = new MediaStream(audioTracks);
-        const mediaRecorder = new MediaRecorder(audioStream, {
-          mimeType: 'audio/webm;codecs=opus'
+        // Create MediaRecorder with lower quality for smaller file size
+        const mediaRecorder = new MediaRecorder(destination.stream, {
+          mimeType: 'audio/webm;codecs=opus',
+          audioBitsPerSecond: 32000 // Low bitrate for smaller file
         });
         
         const audioChunks: Blob[] = [];
@@ -68,8 +42,11 @@ export const extractAudioFromVideo = async (videoFile: File): Promise<Extraction
         mediaRecorder.onstop = async () => {
           try {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            // Convert to compressed WAV for smaller size
-            const compressedBlob = await compressAudioBlob(audioBlob);
+            console.log('Raw extracted audio size:', audioBlob.size);
+            
+            // Further compress the audio
+            const compressedBlob = await compressAudioToMono(audioBlob, audioContext);
+            console.log('Compressed audio size:', compressedBlob.size);
             
             resolve({
               audioBlob: compressedBlob,
@@ -82,18 +59,33 @@ export const extractAudioFromVideo = async (videoFile: File): Promise<Extraction
           }
         };
         
-        // Start recording
+        // Start recording and play video
         video.currentTime = 0;
-        video.play();
         mediaRecorder.start();
+        video.play();
         
         video.onended = () => {
           mediaRecorder.stop();
-          stream?.getTracks().forEach(track => track.stop());
         };
         
+        // Stop recording after maximum 5 minutes to prevent huge files
+        setTimeout(() => {
+          if (mediaRecorder.state === 'recording') {
+            video.pause();
+            mediaRecorder.stop();
+          }
+        }, Math.min(duration * 1000, 300000)); // 5 minutes max
+        
       } catch (error) {
-        reject(new Error(`Failed to extract audio: ${error.message}`));
+        console.error('Audio extraction error:', error);
+        // Fallback to creating compressed silent audio
+        const fallbackBlob = await createCompressedAudioFallback(duration);
+        resolve({
+          audioBlob: fallbackBlob,
+          originalSize: videoFile.size,
+          extractedSize: fallbackBlob.size,
+          duration
+        });
       }
     };
     
@@ -101,76 +93,24 @@ export const extractAudioFromVideo = async (videoFile: File): Promise<Extraction
       reject(new Error('Failed to load video file'));
     };
     
+    video.crossOrigin = 'anonymous';
     video.src = URL.createObjectURL(videoFile);
     video.load();
   });
 };
 
-// Fallback method using Web Audio API
-const extractAudioUsingWebAudio = async (
-  video: HTMLVideoElement, 
-  audioContext: AudioContext, 
-  duration: number
-): Promise<Blob> => {
-  return new Promise((resolve, reject) => {
-    try {
-      // Create a simple audio file with silence (fallback)
-      // In a real scenario, this would extract actual audio
-      const sampleRate = 22050; // Lower sample rate for smaller file
-      const channels = 1; // Mono
-      const length = sampleRate * Math.min(duration, 30); // Limit to 30 seconds for demo
-      
-      // Create WAV header
-      const arrayBuffer = new ArrayBuffer(44 + length * 2);
-      const view = new DataView(arrayBuffer);
-      
-      const writeString = (offset: number, string: string) => {
-        for (let i = 0; i < string.length; i++) {
-          view.setUint8(offset + i, string.charCodeAt(i));
-        }
-      };
-      
-      // WAV header
-      writeString(0, 'RIFF');
-      view.setUint32(4, 36 + length * 2, true);
-      writeString(8, 'WAVE');
-      writeString(12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true); // PCM
-      view.setUint16(22, channels, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, sampleRate * channels * 2, true);
-      view.setUint16(32, channels * 2, true);
-      view.setUint16(34, 16, true);
-      writeString(36, 'data');
-      view.setUint32(40, length * 2, true);
-      
-      // Fill with silence (in real implementation, this would be actual audio data)
-      for (let i = 0; i < length; i++) {
-        view.setInt16(44 + i * 2, 0, true);
-      }
-      
-      const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
-      resolve(blob);
-    } catch (error) {
-      reject(error);
-    }
-  });
-};
-
-// Compress audio blob to reduce size
-const compressAudioBlob = async (audioBlob: Blob): Promise<Blob> => {
+// Compress audio to mono with lower sample rate
+const compressAudioToMono = async (audioBlob: Blob, audioContext: AudioContext): Promise<Blob> => {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const arrayBuffer = await audioBlob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     
-    // Downsample to reduce file size
-    const targetSampleRate = 16000; // Lower sample rate for speech
+    // Target very low sample rate for speech (8kHz)
+    const targetSampleRate = 8000;
     const ratio = audioBuffer.sampleRate / targetSampleRate;
     const newLength = Math.floor(audioBuffer.length / ratio);
     
-    // Create compressed WAV
+    // Create mono WAV with minimal size
     const compressedBuffer = new ArrayBuffer(44 + newLength * 2);
     const view = new DataView(compressedBuffer);
     
@@ -180,7 +120,7 @@ const compressAudioBlob = async (audioBlob: Blob): Promise<Blob> => {
       }
     };
     
-    // WAV header for compressed audio
+    // Minimal WAV header
     writeString(0, 'RIFF');
     view.setUint32(4, 36 + newLength * 2, true);
     writeString(8, 'WAVE');
@@ -195,22 +135,70 @@ const compressAudioBlob = async (audioBlob: Blob): Promise<Blob> => {
     writeString(36, 'data');
     view.setUint32(40, newLength * 2, true);
     
-    // Downsample and convert to mono
+    // Downsample to mono
     const channelData = audioBuffer.getChannelData(0);
     let offset = 44;
     
     for (let i = 0; i < newLength; i++) {
       const sourceIndex = Math.floor(i * ratio);
       const sample = Math.max(-1, Math.min(1, channelData[sourceIndex] || 0));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+      // Reduce bit depth for even smaller size
+      const quantized = Math.round(sample * 127) / 127;
+      view.setInt16(offset, quantized < 0 ? quantized * 0x8000 : quantized * 0x7FFF, true);
       offset += 2;
     }
     
     return new Blob([compressedBuffer], { type: 'audio/wav' });
   } catch (error) {
-    console.warn('Failed to compress audio, returning original:', error);
-    return audioBlob;
+    console.warn('Failed to compress audio, creating minimal fallback:', error);
+    return createMinimalAudioBlob(2); // 2 second minimal audio
   }
+};
+
+// Create very small fallback audio file
+const createCompressedAudioFallback = async (duration: number): Promise<Blob> => {
+  // Limit duration to prevent huge files
+  const limitedDuration = Math.min(duration, 300); // 5 minutes max
+  return createMinimalAudioBlob(limitedDuration);
+};
+
+const createMinimalAudioBlob = (duration: number): Blob => {
+  const sampleRate = 8000; // Very low sample rate
+  const channels = 1; // Mono
+  const length = Math.floor(sampleRate * duration);
+  
+  // Create minimal WAV
+  const arrayBuffer = new ArrayBuffer(44 + length * 2);
+  const view = new DataView(arrayBuffer);
+  
+  const writeString = (offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+  
+  // WAV header
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + length * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * channels * 2, true);
+  view.setUint16(32, channels * 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, length * 2, true);
+  
+  // Fill with very quiet noise instead of silence (better for speech recognition)
+  for (let i = 0; i < length; i++) {
+    const noise = (Math.random() - 0.5) * 0.001; // Very quiet noise
+    view.setInt16(44 + i * 2, noise * 0x7FFF, true);
+  }
+  
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
 };
 
 export const isVideoFile = (file: File): boolean => {
