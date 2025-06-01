@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { FileText, Loader2, Download, MessageSquare, Info } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
-import { processText } from '@/services/textProcessingService';
+import { processText, AIProvider } from '@/services/textProcessingService';
 import { useToast } from '@/hooks/use-toast';
 import { FontControls } from '@/components/FontControls';
 import { TextProcessingOptions } from '@/components/TextProcessingOptions';
@@ -34,6 +33,7 @@ interface TranscriptionSectionProps {
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const groqApiKey = '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';
   const chatgptApiKey = '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';
+  const claudeApiKey = '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';
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const [fontSize, setFontSize] = useState(16);
   const [fontFamily, setFontFamily] = useState('Arial');
@@ -145,7 +145,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     }
   };
 
-  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[], separateMode: boolean) => {
+  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[], separateMode: boolean, provider: AIProvider) => {
     if (!transcriptionResult.transcription.trim()) {
       toast({
         title: 'שגיאה',
@@ -165,13 +165,17 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       // Start progress simulation
       const progressPromise = simulateProgress(transcriptionResult.fileId, 'processing', 4000);
       
-      // Use ChatGPT for processing
-      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey, separateMode);
+      // Choose the right API key based on provider
+      const apiKey = provider === 'chatgpt' ? chatgptApiKey : claudeApiKey;
+      
+      // Use the selected AI provider for processing
+      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, apiKey, separateMode, provider);
       
       // Wait for both to complete
       const [processedText] = await Promise.all([processingPromise, progressPromise]);
       
-      const optionsLabel = separateMode ? selectedOptions.join(', ') + ' (נפרד - ChatGPT)' : selectedOptions.join(', ') + ' (משולב - ChatGPT)';
+      const providerName = provider === 'chatgpt' ? 'ChatGPT' : 'Claude';
+      const optionsLabel = separateMode ? `${selectedOptions.join(', ')} (נפרד - ${providerName})` : `${selectedOptions.join(', ')} (משולב - ${providerName})`;
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
@@ -181,7 +185,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
       toast({
         title: 'עיבוד טקסט הושלם',
-        description: `העיבוד של ${transcriptionResult.fileName} הושלם בהצלחה עם ChatGPT`,
+        description: `העיבוד של ${transcriptionResult.fileName} הושלם בהצלחה עם ${providerName}`,
       });
     } catch (error) {
       console.error('Text processing error:', error);
@@ -426,7 +430,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
                     {/* Text Processing Options */}
                     <TextProcessingOptions
-                      onProcess={(prompts, selectedOptions, separateMode) => handleProcessText(result, prompts, selectedOptions, separateMode)}
+                      onProcess={(prompts, selectedOptions, separateMode, provider) => handleProcessText(result, prompts, selectedOptions, separateMode, provider)}
                       isProcessing={result.isProcessing}
                       hasTranscription={!!result.transcription}
                     />
@@ -436,7 +440,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                       <div className="space-y-4 py-6">
                         <div className="flex items-center justify-center text-blue-600">
                           <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                          <span className="text-lg font-medium">מעבד טקסט עם ChatGPT...</span>
+                          <span className="text-lg font-medium">מעבד טקסט עם AI...</span>
                         </div>
                         <div className="w-full">
                           <div className="flex justify-between text-sm text-gray-600 mb-2">

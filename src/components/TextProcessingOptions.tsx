@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { MessageSquare, Loader2, Settings } from 'lucide-react';
+import { MessageSquare, Loader2, Settings, Brain } from 'lucide-react';
+import { AIProvider } from '@/services/textProcessingService';
 
 interface ProcessingOption {
   id: string;
@@ -15,7 +16,7 @@ interface ProcessingOption {
 }
 
 interface TextProcessingOptionsProps {
-  onProcess: (prompts: string[], selectedOptions: string[], separateMode: boolean) => void;
+  onProcess: (prompts: string[], selectedOptions: string[], separateMode: boolean, provider: AIProvider) => void;
   isProcessing: boolean;
   hasTranscription: boolean;
 }
@@ -62,6 +63,7 @@ const PROCESSING_OPTIONS: ProcessingOption[] = [
 export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscription }: TextProcessingOptionsProps) => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [separateMode, setSeparateMode] = useState(false);
+  const [provider, setProvider] = useState<AIProvider>('chatgpt');
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
     if (checked) {
@@ -80,7 +82,7 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
       .filter(option => selectedOptions.includes(option.id))
       .map(option => option.label);
 
-    onProcess(selectedPrompts, selectedLabels, separateMode);
+    onProcess(selectedPrompts, selectedLabels, separateMode, provider);
   };
 
   if (!hasTranscription) {
@@ -95,7 +97,46 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
         </div>
         <div>
           <h4 className="text-lg font-bold text-gray-800">עיבוד טקסט חכם</h4>
-          <p className="text-sm text-gray-600">בחר אפשרויות לעיבוד הטקסט עם ChatGPT</p>
+          <p className="text-sm text-gray-600">בחר אפשרויות לעיבוד הטקסט עם AI</p>
+        </div>
+      </div>
+
+      {/* AI Provider Selection */}
+      <div className="mb-6 p-4 bg-white rounded-lg border border-blue-200">
+        <div className="flex items-center mb-4">
+          <Brain className="w-5 h-5 text-blue-600 ml-2" />
+          <Label className="text-sm font-semibold text-gray-800">בחר ספק AI:</Label>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div 
+            className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+              provider === 'chatgpt' 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-200 hover:border-blue-300'
+            }`}
+            onClick={() => setProvider('chatgpt')}
+          >
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <div className={`w-3 h-3 rounded-full ${provider === 'chatgpt' ? 'bg-blue-500' : 'bg-gray-300'}`} />
+              <span className="font-medium text-gray-800">ChatGPT</span>
+            </div>
+            <p className="text-xs text-gray-600 mt-1">מהיר וחכם</p>
+          </div>
+          
+          <div 
+            className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+              provider === 'claude' 
+                ? 'border-purple-500 bg-purple-50' 
+                : 'border-gray-200 hover:border-purple-300'
+            }`}
+            onClick={() => setProvider('claude')}
+          >
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <div className={`w-3 h-3 rounded-full ${provider === 'claude' ? 'bg-purple-500' : 'bg-gray-300'}`} />
+              <span className="font-medium text-gray-800">Claude</span>
+            </div>
+            <p className="text-xs text-gray-600 mt-1">מדויק ומפורט</p>
+          </div>
         </div>
       </div>
 
@@ -147,7 +188,11 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
       <Button
         onClick={handleProcess}
         disabled={selectedOptions.length === 0 || isProcessing}
-        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-lg font-semibold"
+        className={`w-full ${
+          provider === 'chatgpt' 
+            ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' 
+            : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+        } text-white py-3 rounded-lg font-semibold`}
         size="lg"
       >
         {isProcessing ? (
@@ -158,7 +203,7 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
         ) : (
           <>
             <MessageSquare className="w-5 h-5 ml-2" />
-            עבד טקסט עם ChatGPT ({selectedOptions.length} אפשרויות - {separateMode ? 'נפרד' : 'משולב'})
+            עבד טקסט עם {provider === 'chatgpt' ? 'ChatGPT' : 'Claude'} ({selectedOptions.length} אפשרויות - {separateMode ? 'נפרד' : 'משולב'})
           </>
         )}
       </Button>

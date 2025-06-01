@@ -1,4 +1,6 @@
 
+export type AIProvider = 'chatgpt' | 'claude';
+
 interface ChatGPTMessage {
   role: 'user' | 'system' | 'assistant';
   content: string;
@@ -12,12 +14,24 @@ interface ChatGPTResponse {
   }>;
 }
 
+interface ClaudeMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface ClaudeResponse {
+  content: Array<{
+    text: string;
+  }>;
+}
+
 export const processText = async (
   text: string, 
   prompts: string[], 
   selectedOptions: string[], 
   apiKey: string,
-  separateMode: boolean = false
+  separateMode: boolean = false,
+  provider: AIProvider = 'chatgpt'
 ): Promise<string> => {
   let combinedPrompt = '';
   
@@ -39,6 +53,19 @@ ${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
     }
   }
 
+  if (provider === 'chatgpt') {
+    return await processWithChatGPT(text, combinedPrompt, separateMode, apiKey);
+  } else {
+    return await processWithClaude(text, combinedPrompt, separateMode, apiKey);
+  }
+};
+
+const processWithChatGPT = async (
+  text: string,
+  combinedPrompt: string,
+  separateMode: boolean,
+  apiKey: string
+): Promise<string> => {
   const systemMessage = separateMode 
     ? 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד בנפרד, הצג כל תוצאה עם כותרת ברורה והפרד בין הסעיפים.'
     : 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.';
@@ -76,4 +103,45 @@ ${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
 
   const result: ChatGPTResponse = await response.json();
   return result.choices[0].message.content;
+};
+
+const processWithClaude = async (
+  text: string,
+  combinedPrompt: string,
+  separateMode: boolean,
+  apiKey: string
+): Promise<string> => {
+  const systemMessage = separateMode 
+    ? 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד בנפרד, הצג כל תוצאה עם כותרת ברורה והפרד בין הסעיפים.'
+    : 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.';
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 2000,
+      system: systemMessage,
+      messages: [
+        {
+          role: 'user',
+          content: `${combinedPrompt}\n\nטקסט לעיבוד:\n\n${text}`,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Claude API Error:', errorText);
+    throw new Error(`Claude processing failed: ${response.statusText}`);
+  }
+
+  const result: ClaudeResponse = await response.json();
+  return result.content[0].text;
 };
