@@ -5,9 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Loader2, Settings, Bot, CheckCircle, XCircle } from 'lucide-react';
-import { AIProvider, checkAPIStatus } from '@/services/textProcessingService';
+import { MessageSquare, Loader2, Settings } from 'lucide-react';
 
 interface ProcessingOption {
   id: string;
@@ -17,7 +15,7 @@ interface ProcessingOption {
 }
 
 interface TextProcessingOptionsProps {
-  onProcess: (prompts: string[], selectedOptions: string[], separateMode: boolean, provider: AIProvider) => void;
+  onProcess: (prompts: string[], selectedOptions: string[], separateMode: boolean) => void;
   isProcessing: boolean;
   hasTranscription: boolean;
 }
@@ -64,45 +62,12 @@ const PROCESSING_OPTIONS: ProcessingOption[] = [
 export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscription }: TextProcessingOptionsProps) => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [separateMode, setSeparateMode] = useState(false);
-  const [provider, setProvider] = useState<AIProvider>('chatgpt');
-  const [apiStatus, setApiStatus] = useState<{ [key in AIProvider]?: { isValid: boolean; error?: string; checked: boolean } }>({});
-  const [isCheckingAPI, setIsCheckingAPI] = useState(false);
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
     if (checked) {
       setSelectedOptions(prev => [...prev, optionId]);
     } else {
       setSelectedOptions(prev => prev.filter(id => id !== optionId));
-    }
-  };
-
-  const handleCheckAPI = async () => {
-    setIsCheckingAPI(true);
-    try {
-      const chatgptKey = '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';
-      const claudeKey = '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';
-      
-      const [chatgptStatus, claudeStatus] = await Promise.allSettled([
-        checkAPIStatus('chatgpt', chatgptKey),
-        checkAPIStatus('claude', claudeKey)
-      ]);
-
-      setApiStatus({
-        chatgpt: {
-          isValid: chatgptStatus.status === 'fulfilled' ? chatgptStatus.value.isValid : false,
-          error: chatgptStatus.status === 'fulfilled' ? chatgptStatus.value.error : 'שגיאה בבדיקה',
-          checked: true
-        },
-        claude: {
-          isValid: claudeStatus.status === 'fulfilled' ? claudeStatus.value.isValid : false,
-          error: claudeStatus.status === 'fulfilled' ? claudeStatus.value.error : 'שגיאה בבדיקה',
-          checked: true
-        }
-      });
-    } catch (error) {
-      console.error('Error checking API status:', error);
-    } finally {
-      setIsCheckingAPI(false);
     }
   };
 
@@ -115,7 +80,7 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
       .filter(option => selectedOptions.includes(option.id))
       .map(option => option.label);
 
-    onProcess(selectedPrompts, selectedLabels, separateMode, provider);
+    onProcess(selectedPrompts, selectedLabels, separateMode);
   };
 
   if (!hasTranscription) {
@@ -130,88 +95,7 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
         </div>
         <div>
           <h4 className="text-lg font-bold text-gray-800">עיבוד טקסט חכם</h4>
-          <p className="text-sm text-gray-600">בחר אפשרויות לעיבוד הטקסט עם AI</p>
-        </div>
-      </div>
-
-      {/* API Status Check */}
-      <div className="mb-6 p-4 bg-white rounded-lg border border-blue-200">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-3 space-x-reverse">
-            <Bot className="w-5 h-5 text-blue-600" />
-            <div>
-              <Label className="text-sm font-semibold text-gray-800">
-                סטטוס API
-              </Label>
-              <p className="text-xs text-gray-600 mt-1">
-                בדוק אם ה-APIs זמינים
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={handleCheckAPI}
-            disabled={isCheckingAPI}
-            variant="outline"
-            size="sm"
-            className="px-4 py-2"
-          >
-            {isCheckingAPI ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                בודק...
-              </>
-            ) : (
-              'בדוק API'
-            )}
-          </Button>
-        </div>
-        
-        {Object.keys(apiStatus).length > 0 && (
-          <div className="space-y-2">
-            {Object.entries(apiStatus).map(([providerName, status]) => (
-              <div key={providerName} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span className="text-sm font-medium">
-                  {providerName === 'chatgpt' ? 'ChatGPT' : 'Claude'}
-                </span>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  {status.isValid ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <XCircle className="w-4 h-4 text-red-600" />
-                  )}
-                  <span className={`text-xs ${status.isValid ? 'text-green-600' : 'text-red-600'}`}>
-                    {status.isValid ? 'זמין' : 'לא זמין'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* AI Provider Selection */}
-      <div className="mb-6 p-4 bg-white rounded-lg border border-blue-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 space-x-reverse">
-            <Bot className="w-5 h-5 text-blue-600" />
-            <div>
-              <Label htmlFor="ai-provider" className="text-sm font-semibold text-gray-800">
-                מודל AI
-              </Label>
-              <p className="text-xs text-gray-600 mt-1">
-                בחר את מודל ה-AI לעיבוד הטקסט
-              </p>
-            </div>
-          </div>
-          <Select value={provider} onValueChange={(value: AIProvider) => setProvider(value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="chatgpt">ChatGPT</SelectItem>
-              <SelectItem value="claude">Claude</SelectItem>
-            </SelectContent>
-          </Select>
+          <p className="text-sm text-gray-600">בחר אפשרויות לעיבוד הטקסט עם ChatGPT</p>
         </div>
       </div>
 
@@ -274,7 +158,7 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
         ) : (
           <>
             <MessageSquare className="w-5 h-5 ml-2" />
-            עבד טקסט עם {provider === 'chatgpt' ? 'ChatGPT' : 'Claude'} ({selectedOptions.length} אפשרויות - {separateMode ? 'נפרד' : 'משולב'})
+            עבד טקסט עם ChatGPT ({selectedOptions.length} אפשרויות - {separateMode ? 'נפרד' : 'משולב'})
           </>
         )}
       </Button>

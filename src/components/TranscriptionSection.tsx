@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -145,7 +144,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     }
   };
 
-  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[], separateMode: boolean, provider: AIProvider) => {
+  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[], separateMode: boolean) => {
     if (!transcriptionResult.transcription.trim()) {
       toast({
         title: 'שגיאה',
@@ -165,15 +164,13 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       // Start progress simulation
       const progressPromise = simulateProgress(transcriptionResult.fileId, 'processing', 4000);
       
-      // Use the selected provider (ChatGPT or Claude)
-      const apiKey = provider === 'chatgpt' ? chatgptApiKey : '';
-      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, apiKey, separateMode, provider);
+      // Use ChatGPT for processing
+      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey, separateMode);
       
       // Wait for both to complete
       const [processedText] = await Promise.all([processingPromise, progressPromise]);
       
-      const providerName = provider === 'chatgpt' ? 'ChatGPT' : 'Claude';
-      const optionsLabel = separateMode ? selectedOptions.join(', ') + ` (נפרד - ${providerName})` : selectedOptions.join(', ') + ` (משולב - ${providerName})`;
+      const optionsLabel = separateMode ? selectedOptions.join(', ') + ' (נפרד - ChatGPT)' : selectedOptions.join(', ') + ' (משולב - ChatGPT)';
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
@@ -183,7 +180,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
       toast({
         title: 'עיבוד טקסט הושלם',
-        description: `העיבוד של ${transcriptionResult.fileName} הושלם בהצלחה עם ${providerName}`,
+        description: `העיבוד של ${transcriptionResult.fileName} הושלם בהצלחה עם ChatGPT`,
       });
     } catch (error) {
       console.error('Text processing error:', error);
@@ -428,7 +425,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
                     {/* Text Processing Options */}
                     <TextProcessingOptions
-                      onProcess={(prompts, selectedOptions, separateMode, provider) => handleProcessText(result, prompts, selectedOptions, separateMode, provider)}
+                      onProcess={(prompts, selectedOptions, separateMode) => handleProcessText(result, prompts, selectedOptions, separateMode)}
                       isProcessing={result.isProcessing}
                       hasTranscription={!!result.transcription}
                     />

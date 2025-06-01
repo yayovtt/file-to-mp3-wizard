@@ -1,3 +1,4 @@
+
 interface ChatGPTMessage {
   role: 'user' | 'system' | 'assistant';
   content: string;
@@ -11,88 +12,13 @@ interface ChatGPTResponse {
   }>;
 }
 
-interface ClaudeMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface ClaudeResponse {
-  content: Array<{
-    text: string;
-  }>;
-}
-
-export type AIProvider = 'chatgpt' | 'claude';
-
-// Function to check API status
-export const checkAPIStatus = async (provider: AIProvider, apiKey: string): Promise<{ isValid: boolean; error?: string }> => {
-  try {
-    if (provider === 'chatgpt') {
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
-      });
-      
-      if (response.ok) {
-        return { isValid: true };
-      } else {
-        const errorText = await response.text();
-        return { isValid: false, error: `ChatGPT API Error: ${response.status} - ${errorText}` };
-      }
-    } else if (provider === 'claude') {
-      // For Claude, we'll try a minimal request to check if the API is accessible
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
-          max_tokens: 10,
-          messages: [{ role: 'user', content: 'test' }],
-        }),
-      });
-      
-      if (response.ok || response.status === 400) { // 400 might be expected for minimal request
-        return { isValid: true };
-      } else {
-        const errorText = await response.text();
-        return { isValid: false, error: `Claude API Error: ${response.status} - ${errorText}` };
-      }
-    }
-  } catch (error) {
-    if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      return { 
-        isValid: false, 
-        error: provider === 'claude' 
-          ? 'לא ניתן להתחבר ל-Claude API. יכול להיות שיש בעיית רשת או שה-API חסום.'
-          : 'לא ניתן להתחבר ל-ChatGPT API. יכול להיות שיש בעיית רשת.'
-      };
-    }
-    return { isValid: false, error: `שגיאה לא צפויה: ${error.message}` };
-  }
-  
-  return { isValid: false, error: 'ספק API לא נתמך' };
-};
-
 export const processText = async (
   text: string, 
   prompts: string[], 
   selectedOptions: string[], 
   apiKey: string,
-  separateMode: boolean = false,
-  provider: AIProvider = 'chatgpt'
+  separateMode: boolean = false
 ): Promise<string> => {
-  // Check API status first
-  const statusCheck = await checkAPIStatus(provider, apiKey);
-  if (!statusCheck.isValid) {
-    throw new Error(statusCheck.error || `${provider} API לא זמין`);
-  }
-
   let combinedPrompt = '';
   
   if (prompts.length === 1) {
@@ -117,20 +43,6 @@ ${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
     ? 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד בנפרד, הצג כל תוצאה עם כותרת ברורה והפרד בין הסעיפים.'
     : 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.';
 
-  if (provider === 'claude') {
-    const claudeApiKey = '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';
-    return await processWithClaude(combinedPrompt, text, systemMessage, claudeApiKey);
-  } else {
-    return await processWithChatGPT(combinedPrompt, text, systemMessage, apiKey);
-  }
-};
-
-const processWithChatGPT = async (
-  combinedPrompt: string,
-  text: string,
-  systemMessage: string,
-  apiKey: string
-): Promise<string> => {
   const messages: ChatGPTMessage[] = [
     {
       role: 'system',
@@ -164,75 +76,4 @@ const processWithChatGPT = async (
 
   const result: ChatGPTResponse = await response.json();
   return result.choices[0].message.content;
-};
-
-const processWithClaude = async (
-  combinedPrompt: string,
-  text: string,
-  systemMessage: string,
-  apiKey: string
-): Promise<string> => {
-  console.log('Starting Claude API request...');
-  
-  const messages: ClaudeMessage[] = [
-    {
-      role: 'user',
-      content: `${systemMessage}\n\n${combinedPrompt}\n\nטקסט לעיבוד:\n\n${text}`,
-    },
-  ];
-
-  const requestBody = {
-    model: 'claude-3-haiku-20240307',
-    max_tokens: 2000,
-    temperature: 0.3,
-    messages,
-  };
-
-  console.log('Claude request body:', JSON.stringify(requestBody, null, 2));
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log('Claude response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Claude API Error Response:', errorText);
-      
-      if (response.status === 401) {
-        throw new Error('מפתח API של Claude לא תקין או פג תוקף. אנא בדוק את המפתח.');
-      } else if (response.status === 403) {
-        throw new Error('אין הרשאה לגשת ל-API של Claude. יכול להיות שהמפתח לא פעיל.');
-      } else if (response.status === 429) {
-        throw new Error('הגעת למגבלת הבקשות של Claude API. נסה שוב מאוחר יותר.');
-      } else {
-        throw new Error(`Claude API Error (${response.status}): ${errorText}`);
-      }
-    }
-
-    const result: ClaudeResponse = await response.json();
-    console.log('Claude response:', result);
-    
-    if (!result.content || !result.content[0] || !result.content[0].text) {
-      throw new Error('תגובה לא תקינה מ-Claude API');
-    }
-    
-    return result.content[0].text;
-  } catch (error) {
-    console.error('Claude API Detailed Error:', error);
-    
-    if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('לא ניתן להתחבר ל-Claude API. ה-API עלול להיות חסום במקום הנוכחי שלך. נסה להשתמש ב-ChatGPT במקום, או בדוק את החיבור לאינטרנט.');
-    }
-    
-    throw error;
-  }
 };
