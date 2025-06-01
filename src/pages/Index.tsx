@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -54,10 +53,22 @@ const Index = () => {
       // Extract audio from video if needed
       if (mediaInfo.isVideo) {
         console.log('Video file detected, extracting audio...');
+        setFiles(prev => prev.map(f => 
+          f.id === fileId 
+            ? { ...f, transcriptionProgress: 5 }
+            : f
+        ));
+        
         const extractionResult = await extractAudioFromVideo(fileItem.file);
         audioFile = new File([extractionResult.audioBlob], `${fileItem.file.name}_audio.wav`, {
           type: 'audio/wav'
         });
+        
+        setFiles(prev => prev.map(f => 
+          f.id === fileId 
+            ? { ...f, transcriptionProgress: 10 }
+            : f
+        ));
       }
       
       // Transcribe the audio file
@@ -65,9 +76,11 @@ const Index = () => {
         audioFile, 
         groqApiKey,
         (progress) => {
+          // Map progress from 10-100 if we extracted audio, or 0-100 if direct audio
+          const adjustedProgress = mediaInfo.isVideo ? 10 + (progress * 0.9) : progress;
           setFiles(prev => prev.map(f => 
             f.id === fileId 
-              ? { ...f, transcriptionProgress: progress }
+              ? { ...f, transcriptionProgress: adjustedProgress }
               : f
           ));
         }
@@ -121,10 +134,9 @@ const Index = () => {
         : f
     ));
 
-    // Start auto-transcription after conversion completes
-    setTimeout(() => {
-      startTranscription(fileId);
-    }, 500);
+    // Start auto-transcription immediately after conversion completes
+    console.log('Conversion completed, starting transcription...');
+    await startTranscription(fileId);
   };
 
   const handleConvertAll = async () => {
