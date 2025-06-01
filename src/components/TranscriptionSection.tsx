@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, MessageSquare, Loader2, Download } from 'lucide-react';
+import { FileText, Loader2, Download } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
-import { summarizeText } from '@/services/summarizationService';
+import { processText } from '@/services/textProcessingService';
 import { useToast } from '@/hooks/use-toast';
 import { FontControls } from '@/components/FontControls';
+import { TextProcessingOptions } from '@/components/TextProcessingOptions';
 
 interface TranscriptionSectionProps {
   files: FileItem[];
@@ -18,9 +19,10 @@ interface TranscriptionResult {
   fileId: string;
   fileName: string;
   transcription: string;
-  summary?: string;
+  processedText?: string;
+  processedOptions?: string[];
   isTranscribing: boolean;
-  isSummarizing: boolean;
+  isProcessing: boolean;
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
@@ -44,7 +46,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         fileName: file.file.name,
         transcription: '',
         isTranscribing: true,
-        isSummarizing: false,
+        isProcessing: false,
       }]);
     }
 
@@ -77,11 +79,11 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     }
   };
 
-  const handleSummarize = async (transcriptionResult: TranscriptionResult) => {
+  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[]) => {
     if (!transcriptionResult.transcription.trim()) {
       toast({
         title: 'שגיאה',
-        description: 'אין טקסט לסיכום. בצע תמלול תחילה.',
+        description: 'אין טקסט לעיבוד. בצע תמלול תחילה.',
         variant: 'destructive',
       });
       return;
@@ -89,34 +91,34 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
     setTranscriptions(prev => prev.map(t => 
       t.fileId === transcriptionResult.fileId 
-        ? { ...t, isSummarizing: true }
+        ? { ...t, isProcessing: true }
         : t
     ));
 
     try {
-      const summary = await summarizeText(transcriptionResult.transcription, chatgptApiKey);
+      const processedText = await processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey);
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
-          ? { ...t, summary, isSummarizing: false }
+          ? { ...t, processedText, processedOptions: selectedOptions, isProcessing: false }
           : t
       ));
 
       toast({
-        title: 'סיכום הושלם',
-        description: `הסיכום של ${transcriptionResult.fileName} הושלם בהצלחה`,
+        title: 'עיבוד טקסט הושלם',
+        description: `העיבוד של ${transcriptionResult.fileName} הושלם בהצלחה`,
       });
     } catch (error) {
-      console.error('Summarization error:', error);
+      console.error('Text processing error:', error);
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
-          ? { ...t, isSummarizing: false }
+          ? { ...t, isProcessing: false }
           : t
       ));
       
       toast({
-        title: 'שגיאה בסיכום',
-        description: 'אירעה שגיאה במהלך הסיכום. נסה שוב.',
+        title: 'שגיאה בעיבוד טקסט',
+        description: 'אירעה שגיאה במהלך עיבוד הטקסט. נסה שוב.',
         variant: 'destructive',
       });
     }
@@ -124,7 +126,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
   const downloadTranscription = (transcriptionResult: TranscriptionResult) => {
     const content = `תמלול: ${transcriptionResult.fileName}\n\n${transcriptionResult.transcription}${
-      transcriptionResult.summary ? `\n\nסיכום:\n${transcriptionResult.summary}` : ''
+      transcriptionResult.processedText ? `\n\nטקסט מעובד (${transcriptionResult.processedOptions?.join(', ')}):\n${transcriptionResult.processedText}` : ''
     }`;
     
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -257,30 +259,10 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-900 text-lg">{result.fileName}</h4>
-                      <p className="text-sm text-gray-600">תמלול וסיכום אוטומטי</p>
+                      <p className="text-sm text-gray-600">תמלול ועיבוד אוטומטי</p>
                     </div>
                   </div>
                   <div className="flex gap-3 space-x-reverse">
-                    {result.transcription && !result.summary && !result.isSummarizing && (
-                      <Button
-                        size="lg"
-                        onClick={() => handleSummarize(result)}
-                        disabled={result.isSummarizing}
-                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-lg"
-                      >
-                        {result.isSummarizing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                            מסכם...
-                          </>
-                        ) : (
-                          <>
-                            <MessageSquare className="w-4 h-4 ml-2" />
-                            סכם טקסט
-                          </>
-                        )}
-                      </Button>
-                    )}
                     {result.transcription && (
                       <Button
                         size="lg"
@@ -316,21 +298,28 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                         dir="rtl"
                       />
                     </div>
+
+                    {/* Text Processing Options */}
+                    <TextProcessingOptions
+                      onProcess={(prompts, selectedOptions) => handleProcessText(result, prompts, selectedOptions)}
+                      isProcessing={result.isProcessing}
+                      hasTranscription={!!result.transcription}
+                    />
                     
-                    {result.isSummarizing && (
+                    {result.isProcessing && (
                       <div className="flex items-center justify-center py-6 text-blue-600">
                         <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                        <span className="text-lg font-medium">מכין סיכום חכם...</span>
+                        <span className="text-lg font-medium">מעבד טקסט...</span>
                       </div>
                     )}
                     
-                    {result.summary && (
+                    {result.processedText && (
                       <div>
                         <label className="block text-lg font-bold text-gray-700 mb-3">
-                          סיכום חכם:
+                          טקסט מעובד ({result.processedOptions?.join(', ')}):
                         </label>
                         <Textarea
-                          value={result.summary}
+                          value={result.processedText}
                           readOnly
                           style={{ fontSize: `${fontSize}px`, fontFamily, textAlign: 'right' }}
                           className="min-h-[120px] resize-none leading-relaxed p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg"
