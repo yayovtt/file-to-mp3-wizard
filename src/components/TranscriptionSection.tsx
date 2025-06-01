@@ -204,6 +204,37 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     window.open(whatsappUrl, '_blank');
   };
 
+  const handleEmail = () => {
+    const transcriptionsText = transcriptions
+      .map(result => `${result.fileName}:\n${result.transcription}${result.processedText ? `\n\nטקסט מעובד: ${result.processedText}` : ''}`)
+      .join('\n\n---\n\n');
+    
+    const subject = encodeURIComponent('תמלולים');
+    const body = encodeURIComponent(`תמלולים:\n\n${transcriptionsText}`);
+    const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+    window.open(mailtoUrl, '_blank');
+  };
+
+  const handleCopy = async () => {
+    const transcriptionsText = transcriptions
+      .map(result => `${result.fileName}:\n${result.transcription}${result.processedText ? `\n\nטקסט מעובד: ${result.processedText}` : ''}`)
+      .join('\n\n---\n\n');
+    
+    try {
+      await navigator.clipboard.writeText(transcriptionsText);
+      toast({
+        title: 'הועתק בהצלחה',
+        description: 'הטקסט הועתק ללוח העריכה',
+      });
+    } catch (error) {
+      toast({
+        title: 'שגיאה בהעתקה',
+        description: 'לא ניתן להעתיק את הטקסט',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDownloadAll = () => {
     transcriptions.forEach(result => {
       if (result.transcription) {
@@ -226,6 +257,8 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           onPrint={handlePrint}
           onShare={handleShare}
           onDownload={handleDownloadAll}
+          onEmail={handleEmail}
+          onCopy={handleCopy}
         />
       )}
 
