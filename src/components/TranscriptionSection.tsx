@@ -1,8 +1,10 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { FileText, Loader2, Download, MessageSquare } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
@@ -23,6 +25,8 @@ interface TranscriptionResult {
   processedOptions?: string[];
   isTranscribing: boolean;
   isProcessing: boolean;
+  transcriptionProgress: number;
+  processingProgress: number;
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
@@ -33,12 +37,42 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const [fontFamily, setFontFamily] = useState('Arial');
   const { toast } = useToast();
 
+  const simulateProgress = async (
+    fileId: string,
+    type: 'transcription' | 'processing',
+    duration: number = 3000
+  ) => {
+    const steps = 20;
+    const interval = duration / steps;
+    
+    for (let i = 0; i <= steps; i++) {
+      const progress = (i / steps) * 100;
+      
+      setTranscriptions(prev => prev.map(t => 
+        t.fileId === fileId 
+          ? { 
+              ...t, 
+              [type === 'transcription' ? 'transcriptionProgress' : 'processingProgress']: progress 
+            }
+          : t
+      ));
+      
+      if (i < steps) {
+        await new Promise(resolve => setTimeout(resolve, interval));
+      }
+    }
+  };
+
   const handleTranscribe = async (file: FileItem) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
     
     if (existingIndex >= 0) {
       setTranscriptions(prev => prev.map((t, i) => 
-        i === existingIndex ? { ...t, isTranscribing: true } : t
+        i === existingIndex ? { 
+          ...t, 
+          isTranscribing: true, 
+          transcriptionProgress: 0 
+        } : t
       ));
     } else {
       setTranscriptions(prev => [...prev, {
@@ -47,15 +81,24 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         transcription: '',
         isTranscribing: true,
         isProcessing: false,
+        transcriptionProgress: 0,
+        processingProgress: 0,
       }]);
     }
 
     try {
-      const transcription = await transcribeAudio(file.file, groqApiKey);
+      // Start progress simulation
+      const progressPromise = simulateProgress(file.id, 'transcription', 2500);
+      
+      // Start actual transcription
+      const transcriptionPromise = transcribeAudio(file.file, groqApiKey);
+      
+      // Wait for both to complete
+      const [transcription] = await Promise.all([transcriptionPromise, progressPromise]);
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === file.id 
-          ? { ...t, transcription, isTranscribing: false }
+          ? { ...t, transcription, isTranscribing: false, transcriptionProgress: 100 }
           : t
       ));
 
@@ -67,7 +110,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       console.error('Transcription error:', error);
       setTranscriptions(prev => prev.map(t => 
         t.fileId === file.id 
-          ? { ...t, isTranscribing: false }
+          ? { ...t, isTranscribing: false, transcriptionProgress: 0 }
           : t
       ));
       
@@ -91,16 +134,23 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
     setTranscriptions(prev => prev.map(t => 
       t.fileId === transcriptionResult.fileId 
-        ? { ...t, isProcessing: true }
+        ? { ...t, isProcessing: true, processingProgress: 0 }
         : t
     ));
 
     try {
-      const processedText = await processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey);
+      // Start progress simulation
+      const progressPromise = simulateProgress(transcriptionResult.fileId, 'processing', 4000);
+      
+      // Start actual processing
+      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey);
+      
+      // Wait for both to complete
+      const [processedText] = await Promise.all([processingPromise, progressPromise]);
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
-          ? { ...t, processedText, processedOptions: selectedOptions, isProcessing: false }
+          ? { ...t, processedText, processedOptions: selectedOptions, isProcessing: false, processingProgress: 100 }
           : t
       ));
 
@@ -112,7 +162,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       console.error('Text processing error:', error);
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
-          ? { ...t, isProcessing: false }
+          ? { ...t, isProcessing: false, processingProgress: 0 }
           : t
       ));
       
@@ -278,9 +328,18 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                 </div>
                 
                 {result.isTranscribing && (
-                  <div className="flex items-center justify-center py-8 text-blue-600">
-                    <Loader2 className="w-6 h-6 animate-spin ml-3" />
-                    <span className="text-lg font-medium">מתמלל את הקובץ...</span>
+                  <div className="space-y-4 py-6">
+                    <div className="flex items-center justify-center text-blue-600">
+                      <Loader2 className="w-6 h-6 animate-spin ml-3" />
+                      <span className="text-lg font-medium">מתמלל את הקובץ...</span>
+                    </div>
+                    <div className="w-full">
+                      <div className="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>התקדמות תמלול</span>
+                        <span>{Math.round(result.transcriptionProgress)}%</span>
+                      </div>
+                      <Progress value={result.transcriptionProgress} className="h-3" />
+                    </div>
                   </div>
                 )}
                 
@@ -307,9 +366,18 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                     />
                     
                     {result.isProcessing && (
-                      <div className="flex items-center justify-center py-6 text-blue-600">
-                        <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                        <span className="text-lg font-medium">מעבד טקסט...</span>
+                      <div className="space-y-4 py-6">
+                        <div className="flex items-center justify-center text-blue-600">
+                          <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                          <span className="text-lg font-medium">מעבד טקסט עם ChatGPT...</span>
+                        </div>
+                        <div className="w-full">
+                          <div className="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>התקדמות עיבוד</span>
+                            <span>{Math.round(result.processingProgress)}%</span>
+                          </div>
+                          <Progress value={result.processingProgress} className="h-3" />
+                        </div>
                       </div>
                     )}
                     
@@ -318,13 +386,21 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                         <label className="block text-lg font-bold text-gray-700 mb-3">
                           טקסט מעובד ({result.processedOptions?.join(', ')}):
                         </label>
-                        <Textarea
-                          value={result.processedText}
-                          readOnly
-                          style={{ fontSize: `${fontSize}px`, fontFamily, textAlign: 'right' }}
-                          className="min-h-[120px] resize-none leading-relaxed p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg"
-                          dir="rtl"
-                        />
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4">
+                          <div 
+                            style={{ 
+                              fontSize: `${fontSize}px`, 
+                              fontFamily, 
+                              textAlign: 'right',
+                              lineHeight: '1.8',
+                              whiteSpace: 'pre-wrap'
+                            }}
+                            className="text-gray-800"
+                            dir="rtl"
+                          >
+                            {result.processedText}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
