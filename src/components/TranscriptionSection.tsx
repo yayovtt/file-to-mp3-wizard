@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -145,7 +144,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     }
   };
 
-  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[]) => {
+  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[], separateMode: boolean) => {
     if (!transcriptionResult.transcription.trim()) {
       toast({
         title: 'שגיאה',
@@ -165,15 +164,17 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       // Start progress simulation
       const progressPromise = simulateProgress(transcriptionResult.fileId, 'processing', 4000);
       
-      // Start actual processing
-      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey);
+      // Start actual processing with the new separateMode parameter
+      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey, separateMode);
       
       // Wait for both to complete
       const [processedText] = await Promise.all([processingPromise, progressPromise]);
       
+      const optionsLabel = separateMode ? selectedOptions.join(', ') + ' (נפרד)' : selectedOptions.join(', ') + ' (משולב)';
+      
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
-          ? { ...t, processedText, processedOptions: selectedOptions, isProcessing: false, processingProgress: 100 }
+          ? { ...t, processedText, processedOptions: [optionsLabel], isProcessing: false, processingProgress: 100 }
           : t
       ));
 
@@ -423,7 +424,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
                     {/* Text Processing Options */}
                     <TextProcessingOptions
-                      onProcess={(prompts, selectedOptions) => handleProcessText(result, prompts, selectedOptions)}
+                      onProcess={(prompts, selectedOptions, separateMode) => handleProcessText(result, prompts, selectedOptions, separateMode)}
                       isProcessing={result.isProcessing}
                       hasTranscription={!!result.transcription}
                     />

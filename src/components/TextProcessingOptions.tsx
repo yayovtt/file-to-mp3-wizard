@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { MessageSquare, Loader2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { MessageSquare, Loader2, Settings } from 'lucide-react';
 
 interface ProcessingOption {
   id: string;
@@ -14,7 +15,7 @@ interface ProcessingOption {
 }
 
 interface TextProcessingOptionsProps {
-  onProcess: (prompts: string[], selectedOptions: string[]) => void;
+  onProcess: (prompts: string[], selectedOptions: string[], separateMode: boolean) => void;
   isProcessing: boolean;
   hasTranscription: boolean;
 }
@@ -60,6 +61,7 @@ const PROCESSING_OPTIONS: ProcessingOption[] = [
 
 export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscription }: TextProcessingOptionsProps) => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [separateMode, setSeparateMode] = useState(false);
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
     if (checked) {
@@ -78,7 +80,7 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
       .filter(option => selectedOptions.includes(option.id))
       .map(option => option.label);
 
-    onProcess(selectedPrompts, selectedLabels);
+    onProcess(selectedPrompts, selectedLabels, separateMode);
   };
 
   if (!hasTranscription) {
@@ -94,6 +96,32 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
         <div>
           <h4 className="text-lg font-bold text-gray-800">עיבוד טקסט חכם</h4>
           <p className="text-sm text-gray-600">בחר אפשרויות לעיבוד הטקסט עם ChatGPT</p>
+        </div>
+      </div>
+
+      {/* Processing Mode Toggle */}
+      <div className="mb-6 p-4 bg-white rounded-lg border border-blue-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3 space-x-reverse">
+            <Settings className="w-5 h-5 text-blue-600" />
+            <div>
+              <Label htmlFor="processing-mode" className="text-sm font-semibold text-gray-800">
+                מצב עיבוד נפרד
+              </Label>
+              <p className="text-xs text-gray-600 mt-1">
+                {separateMode 
+                  ? 'כל אפשרות תעובד בנפרד עם כותרת משלה' 
+                  : 'כל האפשרויות יעובדו יחד לטקסט אחד משולב'
+                }
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="processing-mode"
+            checked={separateMode}
+            onCheckedChange={setSeparateMode}
+            className="data-[state=checked]:bg-blue-600"
+          />
         </div>
       </div>
 
@@ -130,7 +158,7 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
         ) : (
           <>
             <MessageSquare className="w-5 h-5 ml-2" />
-            עבד טקסט ({selectedOptions.length} אפשרויות)
+            עבד טקסט ({selectedOptions.length} אפשרויות - {separateMode ? 'נפרד' : 'משולב'})
           </>
         )}
       </Button>

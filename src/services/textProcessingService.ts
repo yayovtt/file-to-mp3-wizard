@@ -16,25 +16,39 @@ export const processText = async (
   text: string, 
   prompts: string[], 
   selectedOptions: string[], 
-  apiKey: string
+  apiKey: string,
+  separateMode: boolean = false
 ): Promise<string> => {
   let combinedPrompt = '';
   
   if (prompts.length === 1) {
     combinedPrompt = prompts[0];
   } else {
-    // Create a comprehensive prompt that applies all selected processing options together
-    combinedPrompt = `בצע את כל הפעולות הבאות על הטקסט באופן משולב ומקיף, והחזר טקסט אחד מעובד שכולל את כל השיפורים:
+    if (separateMode) {
+      // Process each option separately with clear headers
+      combinedPrompt = `בצע את הפעולות הבאות על הטקסט, כל פעולה בנפרד עם כותרת ברורה:
+
+${prompts.map((prompt, index) => `${index + 1}. ${selectedOptions[index]}: ${prompt}`).join('\n')}
+
+חשוב: הצג את התוצאה עם כותרת ברורה לכל סוג עיבוד (למשל "תיקון שגיאות:", "עריכה:", וכו'), והפרד בין הסעיפים בקו מפריד או רווח.`;
+    } else {
+      // Create a comprehensive prompt that applies all selected processing options together
+      combinedPrompt = `בצע את כל הפעולות הבאות על הטקסט באופן משולב ומקיף, והחזר טקסט אחד מעובד שכולל את כל השיפורים:
 
 ${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
 
 חשוב: אל תפצל את התוצאה לחלקים נפרדים. החזר טקסט אחד רציף שעבר את כל העיבודים הנדרשים יחד.`;
+    }
   }
+
+  const systemMessage = separateMode 
+    ? 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד בנפרד, הצג כל תוצאה עם כותרת ברורה והפרד בין הסעיפים.'
+    : 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.';
 
   const messages: ChatGPTMessage[] = [
     {
       role: 'system',
-      content: 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.',
+      content: systemMessage,
     },
     {
       role: 'user',
