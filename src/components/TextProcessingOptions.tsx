@@ -5,8 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Loader2, Settings, Bot } from 'lucide-react';
+import { MessageSquare, Loader2, Settings } from 'lucide-react';
 import { AIProvider } from '@/services/textProcessingService';
 
 interface ProcessingOption {
@@ -61,15 +60,9 @@ const PROCESSING_OPTIONS: ProcessingOption[] = [
   }
 ];
 
-const AI_PROVIDERS = [
-  { value: 'chatgpt' as const, label: 'ChatGPT (OpenAI)', description: 'מהיר וחזק' },
-  { value: 'claude' as const, label: 'Claude (Anthropic)', description: 'מדויק ומפורט' }
-];
-
 export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscription }: TextProcessingOptionsProps) => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [separateMode, setSeparateMode] = useState(false);
-  const [aiProvider, setAiProvider] = useState<AIProvider>('chatgpt');
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
     if (checked) {
@@ -88,7 +81,8 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
       .filter(option => selectedOptions.includes(option.id))
       .map(option => option.label);
 
-    onProcess(selectedPrompts, selectedLabels, separateMode, aiProvider);
+    // Always use ChatGPT since it works reliably
+    onProcess(selectedPrompts, selectedLabels, separateMode, 'chatgpt');
   };
 
   if (!hasTranscription) {
@@ -103,31 +97,8 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
         </div>
         <div>
           <h4 className="text-lg font-bold text-gray-800">עיבוד טקסט חכם</h4>
-          <p className="text-sm text-gray-600">בחר אפשרויות לעיבוד הטקסט עם AI</p>
+          <p className="text-sm text-gray-600">בחר אפשרויות לעיבוד הטקסט עם ChatGPT</p>
         </div>
-      </div>
-
-      {/* AI Provider Selection */}
-      <div className="mb-6 p-4 bg-white rounded-lg border border-blue-200">
-        <div className="flex items-center space-x-3 space-x-reverse mb-3">
-          <Bot className="w-5 h-5 text-blue-600" />
-          <Label className="text-sm font-semibold text-gray-800">בחר מנוע AI</Label>
-        </div>
-        <Select value={aiProvider} onValueChange={(value: AIProvider) => setAiProvider(value)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="בחר מנוע AI" />
-          </SelectTrigger>
-          <SelectContent>
-            {AI_PROVIDERS.map((provider) => (
-              <SelectItem key={provider.value} value={provider.value}>
-                <div className="flex flex-col">
-                  <span className="font-medium">{provider.label}</span>
-                  <span className="text-xs text-gray-500">{provider.description}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Processing Mode Toggle */}
@@ -189,7 +160,7 @@ export const TextProcessingOptions = ({ onProcess, isProcessing, hasTranscriptio
         ) : (
           <>
             <MessageSquare className="w-5 h-5 ml-2" />
-            עבד טקסט ({selectedOptions.length} אפשרויות - {separateMode ? 'נפרד' : 'משולב'} - {AI_PROVIDERS.find(p => p.value === aiProvider)?.label})
+            עבד טקסט עם ChatGPT ({selectedOptions.length} אפשרויות - {separateMode ? 'נפרד' : 'משולב'})
           </>
         )}
       </Button>

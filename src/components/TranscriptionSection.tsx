@@ -33,7 +33,6 @@ interface TranscriptionSectionProps {
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const groqApiKey = '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';
   const chatgptApiKey = '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';
-  const claudeApiKey = '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';
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const [fontSize, setFontSize] = useState(16);
   const [fontFamily, setFontFamily] = useState('Arial');
@@ -145,7 +144,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     }
   };
 
-  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[], separateMode: boolean, provider: 'chatgpt' | 'claude' = 'chatgpt') => {
+  const handleProcessText = async (transcriptionResult: TranscriptionResult, prompts: string[], selectedOptions: string[], separateMode: boolean) => {
     if (!transcriptionResult.transcription.trim()) {
       toast({
         title: 'שגיאה',
@@ -165,17 +164,13 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       // Start progress simulation
       const progressPromise = simulateProgress(transcriptionResult.fileId, 'processing', 4000);
       
-      // Choose the appropriate API key based on provider
-      const apiKey = provider === 'claude' ? claudeApiKey : chatgptApiKey;
-      
-      // Start actual processing with the new provider parameter
-      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, apiKey, separateMode, provider);
+      // Always use ChatGPT
+      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, chatgptApiKey, separateMode, 'chatgpt');
       
       // Wait for both to complete
       const [processedText] = await Promise.all([processingPromise, progressPromise]);
       
-      const providerLabel = provider === 'claude' ? 'Claude' : 'ChatGPT';
-      const optionsLabel = separateMode ? selectedOptions.join(', ') + ` (נפרד - ${providerLabel})` : selectedOptions.join(', ') + ` (משולב - ${providerLabel})`;
+      const optionsLabel = separateMode ? selectedOptions.join(', ') + ' (נפרד - ChatGPT)' : selectedOptions.join(', ') + ' (משולב - ChatGPT)';
       
       setTranscriptions(prev => prev.map(t => 
         t.fileId === transcriptionResult.fileId 
@@ -185,7 +180,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
       toast({
         title: 'עיבוד טקסט הושלם',
-        description: `העיבוד של ${transcriptionResult.fileName} הושלם בהצלחה עם ${providerLabel}`,
+        description: `העיבוד של ${transcriptionResult.fileName} הושלם בהצלחה עם ChatGPT`,
       });
     } catch (error) {
       console.error('Text processing error:', error);
@@ -429,7 +424,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
                     {/* Text Processing Options */}
                     <TextProcessingOptions
-                      onProcess={(prompts, selectedOptions, separateMode, provider) => handleProcessText(result, prompts, selectedOptions, separateMode, provider)}
+                      onProcess={(prompts, selectedOptions, separateMode) => handleProcessText(result, prompts, selectedOptions, separateMode)}
                       isProcessing={result.isProcessing}
                       hasTranscription={!!result.transcription}
                     />
