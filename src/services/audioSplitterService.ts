@@ -6,8 +6,8 @@ interface AudioChunk {
   chunkIndex: number;
 }
 
-export const splitAudioFile = async (file: File, maxSizeBytes: number = 45 * 1024 * 1024): Promise<AudioChunk[]> => {
-  // Reduced to 45MB to be safe, leaving buffer for encoding overhead
+export const splitAudioFile = async (file: File, maxSizeBytes: number = 25 * 1024 * 1024): Promise<AudioChunk[]> => {
+  // Reduced to 25MB to be very safe with encoding overhead
   
   // If file is smaller than max size, return as single chunk
   if (file.size <= maxSizeBytes) {
@@ -28,8 +28,8 @@ export const splitAudioFile = async (file: File, maxSizeBytes: number = 45 * 102
         const arrayBuffer = e.target?.result as ArrayBuffer;
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         
-        // Calculate number of chunks needed based on file size
-        const numberOfChunks = Math.ceil(file.size / maxSizeBytes);
+        // Calculate number of chunks needed based on file size - use more chunks for safety
+        const numberOfChunks = Math.ceil(file.size / maxSizeBytes) + 1; // Add extra chunk for safety
         const chunkDuration = audioBuffer.duration / numberOfChunks;
         
         console.log(`Splitting into ${numberOfChunks} chunks, each ~${chunkDuration.toFixed(2)} seconds`);
@@ -66,12 +66,15 @@ export const splitAudioFile = async (file: File, maxSizeBytes: number = 45 * 102
           
           console.log(`Chunk ${chunkIndex + 1} created: ${(chunkBlob.size / 1024 / 1024).toFixed(2)}MB`);
           
-          chunks.push({
-            blob: chunkBlob,
-            startTime: currentTime,
-            endTime: endTime,
-            chunkIndex: chunkIndex
-          });
+          // Only add chunks that are not too small (to avoid empty chunks)
+          if (chunkBlob.size > 1024) { // At least 1KB
+            chunks.push({
+              blob: chunkBlob,
+              startTime: currentTime,
+              endTime: endTime,
+              chunkIndex: chunkIndex
+            });
+          }
 
           currentTime = endTime;
           chunkIndex++;
