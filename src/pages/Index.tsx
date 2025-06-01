@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { FileUpload } from '@/components/FileUpload';
 import { ConversionStatus } from '@/components/ConversionStatus';
 import { DownloadSection } from '@/components/DownloadSection';
 import { Music, Video, Download, Sparkles } from 'lucide-react';
+import { TranscriptionSection } from '@/components/TranscriptionSection';
 
 export interface FileItem {
   id: string;
@@ -86,10 +86,10 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            המרת אודיו ווידאו ל-MP3
+            המרת אודיו ווידאו ל-MP3 + תמלול וסיכום
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            המר בקלות כל קובץ אודיו או וידאו ל-MP3 באיכות גבוהה. הפרד קול מסרטונים והמר לאודיו
+            המר בקלות כל קובץ אודיו או וידאו ל-MP3 באיכות גבוהה, תמלל תוכן לטקסט וקבל סיכום אוטומטי
           </p>
         </div>
 
@@ -143,7 +143,7 @@ const Index = () => {
             )}
           </div>
 
-          {/* Download Section */}
+          {/* Download and Transcription Section */}
           <div className="space-y-6">
             {completedFiles.length > 0 && (
               <Card className="p-6 bg-white/80 backdrop-blur-sm">
@@ -157,6 +157,9 @@ const Index = () => {
                 <DownloadSection files={completedFiles} />
               </Card>
             )}
+
+            {/* Transcription Section */}
+            <TranscriptionSection files={files} />
 
             {/* Supported Formats */}
             <Card className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
