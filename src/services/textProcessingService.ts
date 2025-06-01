@@ -113,6 +113,15 @@ const processWithClaude = async (
   systemMessage: string,
   apiKey: string
 ): Promise<string> => {
+  console.log('Starting Claude API request...');
+  console.log('API Key exists:', !!apiKey);
+  console.log('API Key length:', apiKey?.length);
+  
+  // Check if API key is valid format
+  if (!apiKey || !apiKey.startsWith('sk-ant-api03-')) {
+    throw new Error('מפתח API של Claude לא תקין. יש להכניס מפתח המתחיל ב-sk-ant-api03-');
+  }
+
   const messages: ClaudeMessage[] = [
     {
       role: 'user',
@@ -120,27 +129,61 @@ const processWithClaude = async (
     },
   ];
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 2000,
-      temperature: 0.3,
-      messages,
-    }),
-  });
+  const requestBody = {
+    model: 'claude-3-haiku-20240307',
+    max_tokens: 2000,
+    temperature: 0.3,
+    messages,
+  };
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Claude API Error:', errorText);
-    throw new Error(`Claude processing failed: ${response.statusText}`);
+  console.log('Claude request body:', JSON.stringify(requestBody, null, 2));
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'Accept': 'application/json',
+        'Origin': window.location.origin,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('Claude response status:', response.status);
+    console.log('Claude response headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Claude API Error Response:', errorText);
+      
+      if (response.status === 401) {
+        throw new Error('מפתח API של Claude לא תקין או פג תוקף. אנא בדוק את המפתח.');
+      } else if (response.status === 403) {
+        throw new Error('אין הרשאה לגשת ל-API של Claude. יכול להיות שהמפתח לא פעיל.');
+      } else if (response.status === 429) {
+        throw new Error('הגעת למגבלת הבקשות של Claude API. נסה שוב מאוחר יותר.');
+      } else {
+        throw new Error(`Claude API Error (${response.status}): ${errorText}`);
+      }
+    }
+
+    const result: ClaudeResponse = await response.json();
+    console.log('Claude response:', result);
+    
+    if (!result.content || !result.content[0] || !result.content[0].text) {
+      throw new Error('תגובה לא תקינה מ-Claude API');
+    }
+    
+    return result.content[0].text;
+  } catch (error) {
+    console.error('Claude API Detailed Error:', error);
+    
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new Error('לא ניתן להתחבר ל-Claude API. יכול להיות שיש בעיית רשת או שה-API חסום. נסה להשתמש ב-ChatGPT במקום.');
+    }
+    
+    throw error;
   }
-
-  const result: ClaudeResponse = await response.json();
-  return result.content[0].text;
 };
