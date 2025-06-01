@@ -9,19 +9,21 @@ interface DownloadSectionProps {
 
 export const DownloadSection = ({ files }: DownloadSectionProps) => {
   const handleDownload = (file: FileItem) => {
-    if (file.convertedUrl) {
+    if (file.outputBlob) {
+      const url = URL.createObjectURL(file.outputBlob);
       const link = document.createElement('a');
-      link.href = file.convertedUrl;
+      link.href = url;
       link.download = file.file.name.replace(/\.[^/.]+$/, '.mp3');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
   };
 
   const handleDownloadAll = () => {
     files.forEach(file => {
-      if (file.convertedUrl) {
+      if (file.outputBlob) {
         setTimeout(() => handleDownload(file), 100);
       }
     });
