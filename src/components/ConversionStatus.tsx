@@ -11,11 +11,11 @@ interface ConversionStatusProps {
 export const ConversionStatus = ({ files }: ConversionStatusProps) => {
   const getStatusIcon = (status: FileItem['status'], isVideo: boolean) => {
     const iconProps = "w-4 h-4";
-    const baseIcon = isVideo ? FileVideo : FileAudio;
+    const BaseIcon = isVideo ? FileVideo : FileAudio;
     
     switch (status) {
       case 'pending':
-        return <baseIcon className={`${iconProps} text-gray-500`} />;
+        return <BaseIcon className={`${iconProps} text-gray-500`} />;
       case 'converting':
         return <Loader2 className={`${iconProps} text-blue-500 animate-spin`} />;
       case 'completed':
