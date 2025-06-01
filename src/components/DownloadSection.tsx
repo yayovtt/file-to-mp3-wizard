@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Download, FileAudio } from 'lucide-react';
-import { FileItem } from '@/pages/Index';
+import { FileItem } from '@/types/fileItem';
 
 interface DownloadSectionProps {
   files: FileItem[];

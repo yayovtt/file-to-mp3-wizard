@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { TranscriptionSection } from '@/components/TranscriptionSection';
 import { DownloadSection } from '@/components/DownloadSection';
 import { FileText, FileAudio, Download, Sparkles } from 'lucide-react';
-import { FileItem } from '@/pages/Index';
+import { FileItem } from '@/types/fileItem';
 
 interface NavigationTabsProps {
   files: FileItem[];
@@ -117,7 +117,7 @@ export const NavigationTabs = ({
         </TabsContent>
 
         <TabsContent value="transcription">
-          <TranscriptionSection files={files} />
+          <TranscriptionSection />
         </TabsContent>
       </Tabs>
     </div>

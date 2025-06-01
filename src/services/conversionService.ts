@@ -1,12 +1,11 @@
 
 export const convertToMp3 = async (file: File): Promise<Blob> => {
-  // Simulate conversion with compression
+  // Simple conversion simulation without compression
   return new Promise((resolve) => {
     setTimeout(() => {
-      // Create a smaller mock blob to simulate compression
-      const compressedSize = Math.max(file.size * 0.3, 1024); // 30% of original size
+      // Create a mock MP3 blob with similar size to original
       const mockMp3 = new Blob(['mock mp3 data'], { type: 'audio/mp3' });
       resolve(mockMp3);
-    }, 2000);
+    }, 1000); // Faster conversion time
   });
 };

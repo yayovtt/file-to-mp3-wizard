@@ -2,13 +2,12 @@
 import { CheckCircle, Loader2, Circle } from 'lucide-react';
 
 interface ProcessingStepsProps {
-  currentStep: 'conversion' | 'transcription' | 'completed';
+  currentStep: 'transcription' | 'completed';
   fileName: string;
 }
 
 export const ProcessingSteps = ({ currentStep, fileName }: ProcessingStepsProps) => {
   const steps = [
-    { id: 'conversion', label: 'המרה ל-MP3', icon: Circle },
     { id: 'transcription', label: 'תמלול', icon: Circle },
     { id: 'completed', label: 'הושלם', icon: CheckCircle }
   ];

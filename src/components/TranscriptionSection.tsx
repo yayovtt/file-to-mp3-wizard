@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { FileUploadForTranscription } from './transcription/FileUploadForTranscription';
@@ -38,21 +37,17 @@ export const TranscriptionSection = () => {
 
   const processFile = async (fileId: string) => {
     try {
-      // Step 1: Convert to MP3
-      setFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, status: 'converting' } : f
-      ));
-
       const fileData = files.find(f => f.id === fileId);
       if (!fileData) return;
 
+      // Step 1: Convert to MP3 (hidden from user)
       const mp3Blob = await convertToMp3(fileData.file);
       
+      // Step 2: Start transcription (show to user)
       setFiles(prev => prev.map(f => 
         f.id === fileId ? { ...f, mp3Blob, status: 'transcribing' } : f
       ));
 
-      // Step 2: Transcribe
       const mp3File = new File([mp3Blob], fileData.file.name.replace(/\.[^/.]+$/, '.mp3'), {
         type: 'audio/mp3'
       });
@@ -174,12 +169,12 @@ export const TranscriptionSection = () => {
       {/* Processing Status */}
       {files.filter(f => f.status !== 'completed').length > 0 && (
         <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-lg border-0 rounded-xl">
-          <h3 className="text-xl font-bold text-gray-800 mb-6">מעבד קבצים...</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-6">מתמלל קבצים...</h3>
           <div className="space-y-4">
             {files.filter(f => f.status !== 'completed').map((file) => (
               <ProcessingSteps
                 key={file.id}
-                currentStep={file.status === 'converting' ? 'conversion' : 'transcription'}
+                currentStep={file.status === 'transcribing' ? 'transcription' : 'transcription'}
                 fileName={file.file.name}
               />
             ))}
