@@ -32,8 +32,6 @@ interface TranscriptionSectionProps {
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const groqApiKey = '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';
-  const chatgptApiKey = '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';
-  const claudeApiKey = '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';
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const [fontSize, setFontSize] = useState(16);
   const [fontFamily, setFontFamily] = useState('Arial');
@@ -165,11 +163,8 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       // Start progress simulation
       const progressPromise = simulateProgress(transcriptionResult.fileId, 'processing', 4000);
       
-      // Choose the right API key based on provider
-      const apiKey = provider === 'chatgpt' ? chatgptApiKey : claudeApiKey;
-      
-      // Use the selected AI provider for processing
-      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, apiKey, separateMode, provider);
+      // Use the Edge Function for processing (no API key needed)
+      const processingPromise = processText(transcriptionResult.transcription, prompts, selectedOptions, '', separateMode, provider);
       
       // Wait for both to complete
       const [processedText] = await Promise.all([processingPromise, progressPromise]);
