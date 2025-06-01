@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Loader2, Download, MessageSquare, Info } from 'lucide-react';
+import { FileText, Loader2, Download, MessageSquare, Info, Save, Edit3 } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
 import { processText, AIProvider } from '@/services/textProcessingService';
@@ -24,6 +24,8 @@ interface TranscriptionResult {
   processingProgress: number;
   fileSize: number;
   wasChunked?: boolean;
+  isEditingTranscription?: boolean;
+  isEditingProcessed?: boolean;
 }
 
 interface TranscriptionSectionProps {
@@ -196,6 +198,55 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleEditTranscription = (fileId: string) => {
+    setTranscriptions(prev => prev.map(t => 
+      t.fileId === fileId 
+        ? { ...t, isEditingTranscription: !t.isEditingTranscription }
+        : t
+    ));
+  };
+
+  const handleEditProcessed = (fileId: string) => {
+    setTranscriptions(prev => prev.map(t => 
+      t.fileId === fileId 
+        ? { ...t, isEditingProcessed: !t.isEditingProcessed }
+        : t
+    ));
+  };
+
+  const handleTranscriptionChange = (fileId: string, newText: string) => {
+    setTranscriptions(prev => prev.map(t => 
+      t.fileId === fileId 
+        ? { ...t, transcription: newText }
+        : t
+    ));
+  };
+
+  const handleProcessedTextChange = (fileId: string, newText: string) => {
+    setTranscriptions(prev => prev.map(t => 
+      t.fileId === fileId 
+        ? { ...t, processedText: newText }
+        : t
+    ));
+  };
+
+  const handleSaveText = (fileId: string, type: 'transcription' | 'processed') => {
+    setTranscriptions(prev => prev.map(t => 
+      t.fileId === fileId 
+        ? { 
+            ...t, 
+            isEditingTranscription: type === 'transcription' ? false : t.isEditingTranscription,
+            isEditingProcessed: type === 'processed' ? false : t.isEditingProcessed
+          }
+        : t
+    ));
+    
+    toast({
+      title: 'נשמר בהצלחה',
+      description: `השינויים ב${type === 'transcription' ? 'תמלול' : 'טקסט המעובד'} נשמרו`,
+    });
   };
 
   const downloadTranscription = (transcriptionResult: TranscriptionResult) => {
@@ -411,14 +462,39 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                 {result.transcription && (
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-lg font-bold text-gray-700 mb-3">
-                        תמלול מלא:
-                      </label>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="block text-lg font-bold text-gray-700">
+                          תמלול מלא:
+                        </label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => result.isEditingTranscription ? handleSaveText(result.fileId, 'transcription') : handleEditTranscription(result.fileId)}
+                          className="flex items-center gap-2"
+                        >
+                          {result.isEditingTranscription ? (
+                            <>
+                              <Save className="w-4 h-4" />
+                              שמור
+                            </>
+                          ) : (
+                            <>
+                              <Edit3 className="w-4 h-4" />
+                              ערוך
+                            </>
+                          )}
+                        </Button>
+                      </div>
                       <Textarea
                         value={result.transcription}
-                        readOnly
+                        onChange={(e) => handleTranscriptionChange(result.fileId, e.target.value)}
+                        readOnly={!result.isEditingTranscription}
                         style={{ fontSize: `${fontSize}px`, fontFamily, textAlign: 'right' }}
-                        className="min-h-[150px] resize-none leading-relaxed p-4 bg-white border-2 border-gray-200 rounded-lg"
+                        className={`min-h-[150px] resize-none leading-relaxed p-4 border-2 rounded-lg ${
+                          result.isEditingTranscription 
+                            ? 'bg-yellow-50 border-yellow-300 focus:border-yellow-500' 
+                            : 'bg-white border-gray-200'
+                        }`}
                         dir="rtl"
                       />
                     </div>
@@ -449,23 +525,62 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                     
                     {result.processedText && (
                       <div>
-                        <label className="block text-lg font-bold text-gray-700 mb-3">
-                          טקסט מעובד ({result.processedOptions?.join(', ')}):
-                        </label>
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4">
-                          <div 
-                            style={{ 
-                              fontSize: `${fontSize}px`, 
-                              fontFamily, 
-                              textAlign: 'right',
-                              lineHeight: '1.8',
-                              whiteSpace: 'pre-wrap'
-                            }}
-                            className="text-gray-800"
-                            dir="rtl"
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="block text-lg font-bold text-gray-700">
+                            טקסט מעובד ({result.processedOptions?.join(', ')}):
+                          </label>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => result.isEditingProcessed ? handleSaveText(result.fileId, 'processed') : handleEditProcessed(result.fileId)}
+                            className="flex items-center gap-2"
                           >
-                            {result.processedText}
-                          </div>
+                            {result.isEditingProcessed ? (
+                              <>
+                                <Save className="w-4 h-4" />
+                                שמור
+                              </>
+                            ) : (
+                              <>
+                                <Edit3 className="w-4 h-4" />
+                                ערוך
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <div className={`border-2 rounded-lg p-4 ${
+                          result.isEditingProcessed 
+                            ? 'bg-yellow-50 border-yellow-300' 
+                            : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
+                        }`}>
+                          {result.isEditingProcessed ? (
+                            <Textarea
+                              value={result.processedText}
+                              onChange={(e) => handleProcessedTextChange(result.fileId, e.target.value)}
+                              style={{ 
+                                fontSize: `${fontSize}px`, 
+                                fontFamily, 
+                                textAlign: 'right',
+                                lineHeight: '1.8'
+                              }}
+                              className="min-h-[200px] resize-none bg-transparent border-0 focus:ring-0 p-0"
+                              dir="rtl"
+                            />
+                          ) : (
+                            <div 
+                              style={{ 
+                                fontSize: `${fontSize}px`, 
+                                fontFamily, 
+                                textAlign: 'right',
+                                lineHeight: '1.8',
+                                whiteSpace: 'pre-wrap'
+                              }}
+                              className="text-gray-800"
+                              dir="rtl"
+                            >
+                              {result.processedText}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
