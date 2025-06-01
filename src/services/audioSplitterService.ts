@@ -6,7 +6,9 @@ interface AudioChunk {
   chunkIndex: number;
 }
 
-export const splitAudioFile = async (file: File, maxSizeBytes: number = 49 * 1024 * 1024): Promise<AudioChunk[]> => {
+export const splitAudioFile = async (file: File, maxSizeBytes: number = 45 * 1024 * 1024): Promise<AudioChunk[]> => {
+  // Reduced to 45MB to be safe, leaving buffer for encoding overhead
+  
   // If file is smaller than max size, return as single chunk
   if (file.size <= maxSizeBytes) {
     return [{
@@ -26,18 +28,19 @@ export const splitAudioFile = async (file: File, maxSizeBytes: number = 49 * 102
         const arrayBuffer = e.target?.result as ArrayBuffer;
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         
-        // Calculate chunk duration based on file size ratio
-        const totalDuration = audioBuffer.duration;
-        const sizeRatio = maxSizeBytes / file.size;
-        const chunkDuration = totalDuration * sizeRatio * 0.9; // 90% to be safe
+        // Calculate number of chunks needed based on file size
+        const numberOfChunks = Math.ceil(file.size / maxSizeBytes);
+        const chunkDuration = audioBuffer.duration / numberOfChunks;
+        
+        console.log(`Splitting into ${numberOfChunks} chunks, each ~${chunkDuration.toFixed(2)} seconds`);
         
         const chunks: AudioChunk[] = [];
         let currentTime = 0;
         let chunkIndex = 0;
 
-        while (currentTime < totalDuration) {
-          const endTime = Math.min(currentTime + chunkDuration, totalDuration);
-          const chunkLength = (endTime - currentTime) * audioBuffer.sampleRate;
+        while (currentTime < audioBuffer.duration && chunkIndex < numberOfChunks) {
+          const endTime = Math.min(currentTime + chunkDuration, audioBuffer.duration);
+          const chunkLength = Math.floor((endTime - currentTime) * audioBuffer.sampleRate);
           
           // Create new audio buffer for this chunk
           const chunkBuffer = audioContext.createBuffer(
@@ -50,15 +53,18 @@ export const splitAudioFile = async (file: File, maxSizeBytes: number = 49 * 102
           for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
             const channelData = audioBuffer.getChannelData(channel);
             const chunkChannelData = chunkBuffer.getChannelData(channel);
+            const startSample = Math.floor(currentTime * audioBuffer.sampleRate);
             
             for (let i = 0; i < chunkLength; i++) {
-              const sourceIndex = Math.floor(currentTime * audioBuffer.sampleRate) + i;
+              const sourceIndex = startSample + i;
               chunkChannelData[i] = sourceIndex < channelData.length ? channelData[sourceIndex] : 0;
             }
           }
 
           // Convert to blob
-          const chunkBlob = await audioBufferToBlob(chunkBuffer, file.type);
+          const chunkBlob = await audioBufferToBlob(chunkBuffer, 'audio/wav');
+          
+          console.log(`Chunk ${chunkIndex + 1} created: ${(chunkBlob.size / 1024 / 1024).toFixed(2)}MB`);
           
           chunks.push({
             blob: chunkBlob,
@@ -73,6 +79,7 @@ export const splitAudioFile = async (file: File, maxSizeBytes: number = 49 * 102
 
         resolve(chunks);
       } catch (error) {
+        console.error('Error splitting audio:', error);
         reject(error);
       }
     };

@@ -35,8 +35,8 @@ export const transcribeAudioChunked = async (
 ): Promise<ChunkedTranscriptionResult> => {
   console.log(`Starting transcription for file: ${audioFile.name}, size: ${audioFile.size} bytes`);
   
-  // Split file if necessary
-  const chunks = await splitAudioFile(audioFile);
+  // Split file if necessary (using 45MB limit to be safe)
+  const chunks = await splitAudioFile(audioFile, 45 * 1024 * 1024);
   console.log(`File split into ${chunks.length} chunks`);
   
   if (onProgress) onProgress(10);
@@ -47,7 +47,12 @@ export const transcribeAudioChunked = async (
   // Transcribe each chunk
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    console.log(`Transcribing chunk ${i + 1}/${chunks.length}, size: ${chunk.blob.size} bytes`);
+    console.log(`Transcribing chunk ${i + 1}/${chunks.length}, size: ${(chunk.blob.size / 1024 / 1024).toFixed(2)}MB`);
+    
+    // Verify chunk size before sending
+    if (chunk.blob.size > 49 * 1024 * 1024) {
+      throw new Error(`Chunk ${i + 1} is still too large: ${(chunk.blob.size / 1024 / 1024).toFixed(2)}MB`);
+    }
     
     try {
       const formData = new FormData();
@@ -65,7 +70,9 @@ export const transcribeAudioChunked = async (
       });
 
       if (!response.ok) {
-        throw new Error(`Transcription failed for chunk ${i}: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`Transcription API error for chunk ${i}:`, response.status, errorText);
+        throw new Error(`Transcription failed for chunk ${i + 1}: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result: GroqTranscriptionResponse = await response.json();
@@ -77,7 +84,7 @@ export const transcribeAudioChunked = async (
         chunkIndex: chunk.chunkIndex
       });
       
-      console.log(`Chunk ${i + 1} transcribed successfully`);
+      console.log(`Chunk ${i + 1} transcribed successfully: "${result.text.substring(0, 50)}..."`);
       
       if (onProgress) {
         onProgress(10 + (i + 1) * progressPerChunk);
@@ -96,6 +103,7 @@ export const transcribeAudioChunked = async (
     .join(' ');
   
   console.log('Transcription completed successfully');
+  console.log(`Full transcription: "${fullText.substring(0, 100)}..."`);
   
   if (onProgress) onProgress(100);
   
