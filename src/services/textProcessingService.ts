@@ -146,8 +146,6 @@ const processWithClaude = async (
     return result.content[0].text;
   } catch (error) {
     console.error('Claude fetch error:', error);
-    // Fallback to ChatGPT if Claude fails
-    console.log('Falling back to ChatGPT due to Claude error');
     throw new Error(`Claude API לא זמין כרגע. נסה שוב או השתמש ב-ChatGPT`);
   }
 };
