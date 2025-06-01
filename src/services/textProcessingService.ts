@@ -116,6 +116,8 @@ const processWithClaude = async (
     : 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.';
 
   try {
+    console.log('Attempting Claude API call with key:', apiKey.substring(0, 20) + '...');
+    
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -124,7 +126,7 @@ const processWithClaude = async (
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-3-sonnet-20240229',
         max_tokens: 2000,
         system: systemMessage,
         messages: [
@@ -136,16 +138,25 @@ const processWithClaude = async (
       }),
     });
 
+    console.log('Claude API response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API Error:', errorText);
-      throw new Error(`Claude processing failed: ${response.statusText}`);
+      console.error('Claude API Error Response:', errorText);
+      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
     }
 
     const result: ClaudeResponse = await response.json();
+    console.log('Claude API success:', result);
     return result.content[0].text;
   } catch (error) {
     console.error('Claude fetch error:', error);
-    throw new Error(`Claude API לא זמין כרגע. נסה שוב או השתמש ב-ChatGPT`);
+    
+    // Provide more specific error message
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error('שגיאת רשת - לא ניתן להתחבר ל-Claude API. בדוק את החיבור לאינטרנט או נסה שוב מאוחר יותר.');
+    }
+    
+    throw new Error(`Claude API לא זמין כרגע: ${error.message}. נסה שוב או השתמש ב-ChatGPT`);
   }
 };
