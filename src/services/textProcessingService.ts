@@ -60,7 +60,9 @@ ${prompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}
     : 'אתה עוזר מקצועי לעיבוד טקסטים בעברית. כאשר מתבקש לבצע מספר פעולות עיבוד, תבצע אותן באופן משולב ותחזיר טקסט אחד מעובד שכולל את כל השיפורים בצורה הרמונית וזורמת.';
 
   if (provider === 'claude') {
-    return await processWithClaude(combinedPrompt, text, systemMessage, apiKey);
+    // Use the provided Claude API key
+    const claudeApiKey = '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';
+    return await processWithClaude(combinedPrompt, text, systemMessage, claudeApiKey);
   } else {
     return await processWithChatGPT(combinedPrompt, text, systemMessage, apiKey);
   }
@@ -114,14 +116,7 @@ const processWithClaude = async (
   apiKey: string
 ): Promise<string> => {
   console.log('Starting Claude API request...');
-  console.log('API Key exists:', !!apiKey);
-  console.log('API Key length:', apiKey?.length);
   
-  // Check if API key is valid format
-  if (!apiKey || !apiKey.startsWith('sk-ant-api03-')) {
-    throw new Error('מפתח API של Claude לא תקין. יש להכניס מפתח המתחיל ב-sk-ant-api03-');
-  }
-
   const messages: ClaudeMessage[] = [
     {
       role: 'user',
@@ -145,14 +140,11 @@ const processWithClaude = async (
         'x-api-key': apiKey,
         'Content-Type': 'application/json',
         'anthropic-version': '2023-06-01',
-        'Accept': 'application/json',
-        'Origin': window.location.origin,
       },
       body: JSON.stringify(requestBody),
     });
 
     console.log('Claude response status:', response.status);
-    console.log('Claude response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
