@@ -9,6 +9,7 @@ import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
 import { summarizeText } from '@/services/summarizationService';
 import { useToast } from '@/hooks/use-toast';
+import { FontControls } from '@/components/FontControls';
 
 interface TranscriptionSectionProps {
   files: FileItem[];
@@ -25,8 +26,10 @@ interface TranscriptionResult {
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const groqApiKey = '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';
-  const chatgptApiKey = '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';
+  const chatgptApiKey = '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';
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
+  const [fontSize, setFontSize] = useState(16);
+  const [fontFamily, setFontFamily] = useState('Arial');
   const { toast } = useToast();
 
   const handleTranscribe = async (file: FileItem) => {
@@ -136,10 +139,45 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     URL.revokeObjectURL(url);
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleShare = () => {
+    const transcriptionsText = transcriptions
+      .map(result => `${result.fileName}:\n${result.transcription}${result.summary ? `\n\nסיכום: ${result.summary}` : ''}`)
+      .join('\n\n---\n\n');
+    
+    const whatsappText = encodeURIComponent(`תמלולים:\n\n${transcriptionsText}`);
+    const whatsappUrl = `https://wa.me/?text=${whatsappText}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleDownloadAll = () => {
+    transcriptions.forEach(result => {
+      if (result.transcription) {
+        setTimeout(() => downloadTranscription(result), 100);
+      }
+    });
+  };
+
   const completedFiles = files.filter(f => f.status === 'completed');
 
   return (
     <div className="space-y-8">
+      {/* Font Controls */}
+      {transcriptions.length > 0 && (
+        <FontControls
+          fontSize={fontSize}
+          fontFamily={fontFamily}
+          onFontSizeChange={setFontSize}
+          onFontFamilyChange={setFontFamily}
+          onPrint={handlePrint}
+          onShare={handleShare}
+          onDownload={handleDownloadAll}
+        />
+      )}
+
       {/* Files Ready for Transcription */}
       {completedFiles.length > 0 && (
         <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-lg border-0 rounded-xl">
@@ -274,7 +312,8 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                       <Textarea
                         value={result.transcription}
                         readOnly
-                        className="min-h-[150px] resize-none text-base leading-relaxed p-4 bg-white border-2 border-gray-200 rounded-lg"
+                        style={{ fontSize: `${fontSize}px`, fontFamily }}
+                        className="min-h-[150px] resize-none leading-relaxed p-4 bg-white border-2 border-gray-200 rounded-lg"
                       />
                     </div>
                     
@@ -293,7 +332,8 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                         <Textarea
                           value={result.summary}
                           readOnly
-                          className="min-h-[120px] resize-none text-base leading-relaxed p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg"
+                          style={{ fontSize: `${fontSize}px`, fontFamily }}
+                          className="min-h-[120px] resize-none leading-relaxed p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg"
                         />
                       </div>
                     )}

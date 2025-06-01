@@ -31,7 +31,7 @@ export const summarizeText = async (text: string, apiKey: string): Promise<strin
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       messages,
       max_tokens: 500,
       temperature: 0.3,
@@ -39,6 +39,8 @@ export const summarizeText = async (text: string, apiKey: string): Promise<strin
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('API Error:', errorText);
     throw new Error(`Summarization failed: ${response.statusText}`);
   }
 
