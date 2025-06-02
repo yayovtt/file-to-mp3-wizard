@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -10,6 +11,7 @@ export interface FileItem {
   status: 'pending' | 'converting' | 'completed' | 'error';
   progress: number;
   convertedUrl?: string;
+  convertedSize?: number;
   outputFormat?: 'mp3' | 'webm';
   autoProcess?: boolean;
 }
