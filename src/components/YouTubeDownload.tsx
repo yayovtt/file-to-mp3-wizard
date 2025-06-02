@@ -131,7 +131,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
                 alt="Video thumbnail" 
                 className="w-16 h-12 object-cover rounded"
                 onError={(e) => {
-                  e.target.style.display = 'none';
+                  (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
               <div className="flex-1">
