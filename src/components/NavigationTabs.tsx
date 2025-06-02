@@ -68,37 +68,37 @@ export const NavigationTabs = ({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="conversion" className="space-y-8">
-          <div className="grid grid-cols-1 xl:grid-cols-1 gap-12">
+        <TabsContent value="conversion" className="space-y-12">
+          <div className="grid grid-cols-1 xl:grid-cols-1 gap-16">
             {/* Upload Section */}
-            <div className="space-y-8">
-              {/* Settings and YouTube Download - Right Aligned with Better Spacing */}
-              <div className="flex justify-end gap-8 mb-12">
-                {/* Format and Auto-Processing Settings */}
-                <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl max-w-md">
-                  <div className="flex items-center mb-6">
-                    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-3 rounded-xl">
-                      <Settings className="w-6 h-6 text-white" />
+            <div className="space-y-12">
+              {/* Top Section - Settings and YouTube Download */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16">
+                {/* Format and Auto-Processing Settings - Above WebM */}
+                <Card className="p-10 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
+                  <div className="flex items-center mb-8">
+                    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-4 rounded-xl">
+                      <Settings className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mr-4">הגדרות המרה</h3>
+                    <h3 className="text-2xl font-bold text-gray-800 mr-6">הגדרות המרה</h3>
                   </div>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     {/* Output Format Selection */}
                     <div>
-                      <Label className="text-base font-medium text-gray-700 mb-3 block">פורמט יעד:</Label>
-                      <div className="flex gap-4">
+                      <Label className="text-lg font-medium text-gray-700 mb-4 block">פורמט יעד:</Label>
+                      <div className="flex gap-6">
                         <Button
                           variant={outputFormat === 'mp3' ? 'default' : 'outline'}
                           onClick={() => onOutputFormatChange('mp3')}
-                          className="flex-1"
+                          className="flex-1 py-4 text-lg"
                         >
                           MP3
                         </Button>
                         <Button
                           variant={outputFormat === 'webm' ? 'default' : 'outline'}
                           onClick={() => onOutputFormatChange('webm')}
-                          className="flex-1"
+                          className="flex-1 py-4 text-lg"
                         >
                           WebM
                         </Button>
@@ -108,10 +108,10 @@ export const NavigationTabs = ({
                     {/* Auto-Processing Toggle */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label htmlFor="auto-process" className="text-base font-medium text-gray-700">
+                        <Label htmlFor="auto-process" className="text-lg font-medium text-gray-700">
                           עיבוד אוטומטי
                         </Label>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-base text-gray-600 mt-2">
                           התחל תמלול ועיבוד טקסט אוטומטית לאחר המרה
                         </p>
                       </div>
@@ -124,8 +124,8 @@ export const NavigationTabs = ({
                   </div>
                 </Card>
 
-                {/* YouTube Download with Better Spacing */}
-                <div className="max-w-md">
+                {/* YouTube Download - On the other side */}
+                <div>
                   <YouTubeDownload 
                     onFileDownloaded={handleYouTubeFileDownloaded}
                     outputFormat={outputFormat}
@@ -133,28 +133,28 @@ export const NavigationTabs = ({
                 </div>
               </div>
 
-              <Card className="p-8 border-2 border-dashed border-blue-300 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
+              <Card className="p-10 border-2 border-dashed border-blue-300 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
                 <FileUpload onFilesSelected={onFilesSelected} />
               </Card>
 
               {files.length > 0 && (
-                <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
-                  <div className="flex items-center justify-between mb-6">
+                <Card className="p-10 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
+                  <div className="flex items-center justify-between mb-8">
                     <h3 className="text-2xl font-bold text-gray-800">רשימת קבצים</h3>
-                    <div className="flex gap-3 space-x-reverse">
+                    <div className="flex gap-4 space-x-reverse">
                       {pendingFiles.length > 0 && (
                         <Button
                           onClick={onConvertAll}
                           disabled={isConverting}
                           size="lg"
-                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-8 py-3 text-lg rounded-xl shadow-lg"
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-10 py-4 text-xl rounded-xl shadow-lg"
                         >
-                          <Sparkles className="w-5 h-5 mr-2" />
+                          <Sparkles className="w-6 h-6 mr-3" />
                           המר הכל ל-{outputFormat.toUpperCase()}
                         </Button>
                       )}
                       {completedFiles.length > 0 && (
-                        <Button variant="outline" onClick={onClearCompleted} size="lg" className="px-6 py-3 text-lg rounded-xl">
+                        <Button variant="outline" onClick={onClearCompleted} size="lg" className="px-8 py-4 text-xl rounded-xl">
                           נקה הושלמו
                         </Button>
                       )}
@@ -165,9 +165,9 @@ export const NavigationTabs = ({
               )}
 
               {/* Supported Formats */}
-              <Card className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-300 shadow-lg rounded-xl">
-                <h3 className="text-lg font-bold mb-3 text-gray-800">פורמטים נתמכים</h3>
-                <div className="text-sm text-gray-600">
+              <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-300 shadow-lg rounded-xl">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">פורמטים נתמכים</h3>
+                <div className="text-base text-gray-600">
                   <span className="font-medium">אודיו:</span> MP3, WAV, FLAC, AAC, OGG<br/>
                   <span className="font-medium">וידאו:</span> MP4, AVI, MOV, MKV, WebM<br/>
                   <span className="font-medium">יוטיוב:</span> כל קישור יוטיוב רגיל או Shorts<br/>

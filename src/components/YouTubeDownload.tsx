@@ -96,20 +96,20 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
   };
 
   return (
-    <Card className="p-8 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200 shadow-xl rounded-2xl">
-      <div className="flex items-center mb-6">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-3 rounded-xl">
-          <Youtube className="w-6 h-6 text-white" />
+    <Card className="p-10 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-xl rounded-2xl">
+      <div className="flex items-center mb-8">
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-xl">
+          <Youtube className="w-7 h-7 text-white" />
         </div>
-        <div className="mr-4">
-          <h3 className="text-xl font-bold text-gray-800">הורדה מיוטיוב</h3>
-          <p className="text-gray-600">הכנס קישור יוטיוב להורדת אודיו</p>
+        <div className="mr-6">
+          <h3 className="text-2xl font-bold text-gray-800">הורדה מיוטיוב</h3>
+          <p className="text-lg text-gray-600">הכנס קישור יוטיוב להורדת אודיו</p>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
-          <Label htmlFor="youtube-url" className="text-base font-medium text-gray-700 mb-2 block">
+          <Label htmlFor="youtube-url" className="text-lg font-medium text-gray-700 mb-3 block">
             קישור יוטיוב:
           </Label>
           <Input
@@ -118,27 +118,27 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
             placeholder="https://www.youtube.com/watch?v=..."
             value={youtubeUrl}
             onChange={(e) => handleUrlChange(e.target.value)}
-            className="text-left"
+            className="text-left py-4 text-lg"
             dir="ltr"
           />
         </div>
 
         {videoInfo && (
-          <Card className="p-4 bg-white border-emerald-200">
+          <Card className="p-5 bg-white border-green-200">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <img 
                 src={videoInfo.thumbnail} 
                 alt="Video thumbnail" 
-                className="w-16 h-12 object-cover rounded"
+                className="w-20 h-15 object-cover rounded"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
               <div className="flex-1">
-                <p className="font-medium text-gray-900">{videoInfo.title}</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-gray-900 text-lg">{videoInfo.title}</p>
+                <p className="text-base text-gray-600">
                   משך: {Math.floor(videoInfo.duration / 60)}:{(videoInfo.duration % 60).toString().padStart(2, '0')}
-                  {videoInfo.hasSubtitles && <span className="text-green-600 mr-2">• כתוביות זמינות</span>}
+                  {videoInfo.hasSubtitles && <span className="text-green-600 mr-3">• כתוביות זמינות</span>}
                 </p>
               </div>
             </div>
@@ -146,8 +146,8 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         )}
 
         {isDownloading && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+          <div className="space-y-3">
+            <div className="flex justify-between text-base">
               <span>מוריד...</span>
               <span>{progress}%</span>
             </div>
@@ -158,15 +158,15 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         <Button
           onClick={handleDownload}
           disabled={!youtubeUrl || isDownloading}
-          className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-4 text-xl"
         >
-          <Download className="w-4 h-4 mr-2" />
+          <Download className="w-5 h-5 mr-3" />
           {isDownloading ? 'מוריד...' : `הורד כ-${outputFormat.toUpperCase()}`}
         </Button>
 
-        <div className="text-xs text-gray-500 text-center">
-          <p>התכונה תומכת בקישורי יוטיוב רגילים ו-YouTube Shorts</p>
-          <p>כתוביות יורדו אוטומטית אם זמינות</p>
+        <div className="text-sm text-gray-500 text-center">
+          <p className="text-base">התכונה תומכת בקישורי יוטיוב רגילים ו-YouTube Shorts</p>
+          <p className="text-base">כתוביות יורדו אוטומטית אם זמינות</p>
         </div>
       </div>
     </Card>
