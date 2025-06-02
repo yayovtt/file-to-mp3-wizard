@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -42,18 +41,52 @@ const Index = () => {
       ));
     };
 
-    // Simulate conversion progress
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      updateProgress(i);
-    }
+    // Import compression service
+    const { compressAudio, getCompressedFileSize } = await import('@/services/audioCompressionService');
+    
+    const fileItem = files.find(f => f.id === fileId);
+    if (!fileItem) return;
 
-    // Create a mock converted URL (in real app, this would be the actual converted file)
-    setFiles(prev => prev.map(f => 
-      f.id === fileId 
-        ? { ...f, convertedUrl: URL.createObjectURL(f.file) }
-        : f
-    ));
+    try {
+      // Simulate conversion progress
+      for (let i = 0; i <= 70; i += 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        updateProgress(i);
+      }
+
+      let convertedBlob: Blob;
+      
+      if (fileItem.outputFormat === 'webm' || fileItem.outputFormat === 'mp3') {
+        // Apply 16 kbps compression
+        convertedBlob = await compressAudio(fileItem.file, { bitrate: 16 });
+        updateProgress(90);
+      } else {
+        // Fallback to original file
+        convertedBlob = fileItem.file;
+        updateProgress(90);
+      }
+
+      updateProgress(100);
+
+      // Create compressed URL
+      const convertedUrl = URL.createObjectURL(convertedBlob);
+      
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, convertedUrl, convertedSize: convertedBlob.size }
+          : f
+      ));
+
+      console.log(`File compressed from ${fileItem.file.size} to ${convertedBlob.size} bytes`);
+
+    } catch (error) {
+      console.error('Compression error:', error);
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: 'error' }
+          : f
+      ));
+    }
   };
 
   const handleConvertAll = async () => {

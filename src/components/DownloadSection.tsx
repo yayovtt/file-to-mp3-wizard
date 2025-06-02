@@ -36,6 +36,18 @@ export const DownloadSection = ({ files }: DownloadSectionProps) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const getCompressionInfo = (file: FileItem) => {
+    const originalSize = file.file.size;
+    const compressedSize = file.convertedSize || originalSize;
+    const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+    
+    return {
+      originalSize,
+      compressedSize,
+      compressionRatio: parseFloat(compressionRatio)
+    };
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -52,6 +64,7 @@ export const DownloadSection = ({ files }: DownloadSectionProps) => {
         {files.map((file) => {
           const outputFormat = file.outputFormat || 'mp3';
           const isVideo = outputFormat === 'webm';
+          const compressionInfo = getCompressionInfo(file);
           
           return (
             <div key={file.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
@@ -68,7 +81,10 @@ export const DownloadSection = ({ files }: DownloadSectionProps) => {
                     {file.file.name.replace(/\.[^/.]+$/, `.${outputFormat}`)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {formatFileSize(file.file.size)} • {outputFormat.toUpperCase()}
+                    {formatFileSize(compressionInfo.originalSize)} → {formatFileSize(compressionInfo.compressedSize)} • {outputFormat.toUpperCase()} • 16 kbps
+                    {compressionInfo.compressionRatio > 0 && (
+                      <span className="text-green-600 font-medium"> • חסכון של {compressionInfo.compressionRatio}%</span>
+                    )}
                     {file.autoProcess && <span className="text-blue-600"> • עיבוד אוטומטי</span>}
                   </p>
                 </div>
