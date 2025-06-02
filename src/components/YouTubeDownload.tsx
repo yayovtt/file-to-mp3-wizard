@@ -96,9 +96,9 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
   };
 
   return (
-    <Card className="p-10 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-xl rounded-2xl">
+    <Card className="p-10 bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-xl rounded-2xl">
       <div className="flex items-center mb-8">
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-xl">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 p-4 rounded-xl">
           <Youtube className="w-7 h-7 text-white" />
         </div>
         <div className="mr-6">
@@ -124,7 +124,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         </div>
 
         {videoInfo && (
-          <Card className="p-5 bg-white border-green-200">
+          <Card className="p-5 bg-white border-red-200">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <img 
                 src={videoInfo.thumbnail} 
@@ -138,7 +138,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
                 <p className="font-medium text-gray-900 text-lg">{videoInfo.title}</p>
                 <p className="text-base text-gray-600">
                   משך: {Math.floor(videoInfo.duration / 60)}:{(videoInfo.duration % 60).toString().padStart(2, '0')}
-                  {videoInfo.hasSubtitles && <span className="text-green-600 mr-3">• כתוביות זמינות</span>}
+                  {videoInfo.hasSubtitles && <span className="text-red-600 mr-3">• כתוביות זמינות</span>}
                 </p>
               </div>
             </div>
@@ -158,7 +158,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         <Button
           onClick={handleDownload}
           disabled={!youtubeUrl || isDownloading}
-          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-4 text-xl"
+          className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 py-4 text-xl"
         >
           <Download className="w-5 h-5 mr-3" />
           {isDownloading ? 'מוריד...' : `הורד כ-${outputFormat.toUpperCase()}`}
