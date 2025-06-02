@@ -17,6 +17,7 @@ interface NavigationTabsProps {
   onFilesSelected: (files: File[]) => void;
   onConvertAll: () => void;
   onClearCompleted: () => void;
+  onDeleteFile: (fileId: string) => void;
   isConverting: boolean;
   outputFormat: 'mp3' | 'webm';
   onOutputFormatChange: (format: 'mp3' | 'webm') => void;
@@ -29,6 +30,7 @@ export const NavigationTabs = ({
   onFilesSelected, 
   onConvertAll, 
   onClearCompleted, 
+  onDeleteFile,
   isConverting,
   outputFormat,
   onOutputFormatChange,
@@ -153,7 +155,7 @@ export const NavigationTabs = ({
                       )}
                     </div>
                   </div>
-                  <ConversionStatus files={files} />
+                  <ConversionStatus files={files} onDeleteFile={onDeleteFile} />
                 </Card>
               )}
 

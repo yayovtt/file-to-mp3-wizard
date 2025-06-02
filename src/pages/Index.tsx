@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -31,6 +32,10 @@ const Index = () => {
       autoProcess,
     }));
     setFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const handleDeleteFile = (fileId: string) => {
+    setFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
   const simulateConversion = async (fileId: string) => {
@@ -235,6 +240,7 @@ const Index = () => {
           onFilesSelected={handleFilesSelected}
           onConvertAll={handleConvertAll}
           onClearCompleted={clearCompleted}
+          onDeleteFile={handleDeleteFile}
           isConverting={isConverting}
           outputFormat={outputFormat}
           onOutputFormatChange={setOutputFormat}

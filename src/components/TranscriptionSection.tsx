@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,18 +42,20 @@ export const TranscriptionSection = ({ files, autoProcessEnabled }: Transcriptio
     setSelectedFiles([]);
   };
 
-  const getFileForTranscription = (file: FileItem): File => {
+  const getFileForTranscription = async (file: FileItem): Promise<File> => {
     if (file.convertedUrl && file.convertedSize) {
       console.log(`Using converted file for transcription. Original size: ${file.file.size} bytes, Converted size: ${file.convertedSize} bytes`);
       
-      fetch(file.convertedUrl)
-        .then(response => response.blob())
-        .then(blob => {
-          console.log(`Converted file ready for transcription: ${blob.size} bytes`);
-          return new File([blob], file.file.name, { type: blob.type });
-        });
-      
-      return file.file;
+      try {
+        const response = await fetch(file.convertedUrl);
+        const blob = await response.blob();
+        console.log(`Converted file ready for transcription: ${blob.size} bytes`);
+        return new File([blob], file.file.name, { type: blob.type });
+      } catch (error) {
+        console.error('Error fetching converted file:', error);
+        console.log(`Falling back to original file: ${file.file.size} bytes`);
+        return file.file;
+      }
     }
     
     console.log(`Using original file for transcription: ${file.file.size} bytes`);
@@ -68,7 +71,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled }: Transcriptio
   };
 
   const transcribeFile = async (file: FileItem) => {
-    const fileForTranscription = getFileForTranscription(file);
+    const fileForTranscription = await getFileForTranscription(file);
     
     console.log(`Starting transcription for file: ${file.file.name}`);
     console.log(`Original file size: ${file.file.size} bytes`);
@@ -108,7 +111,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled }: Transcriptio
         ...prev,
         [file.id]: {
           status: 'error',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
           fileName: file.file.name
         }
       }));
@@ -167,7 +170,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled }: Transcriptio
         ...prev,
         [fileId]: {
           status: 'error',
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         }
       }));
     }

@@ -2,14 +2,15 @@
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileAudio, FileVideo, CheckCircle, AlertCircle, Loader2, Download } from 'lucide-react';
+import { FileAudio, FileVideo, CheckCircle, AlertCircle, Loader2, Download, Trash2 } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
 interface ConversionStatusProps {
   files: FileItem[];
+  onDeleteFile?: (fileId: string) => void;
 }
 
-export const ConversionStatus = ({ files }: ConversionStatusProps) => {
+export const ConversionStatus = ({ files, onDeleteFile }: ConversionStatusProps) => {
   const handleDownload = (file: FileItem) => {
     if (file.convertedUrl) {
       const link = document.createElement('a');
@@ -130,6 +131,16 @@ export const ConversionStatus = ({ files }: ConversionStatusProps) => {
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <Download className="w-4 h-4" />
+                  </Button>
+                )}
+                {onDeleteFile && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onDeleteFile(file.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 )}
                 {getStatusBadge(file.status)}
