@@ -33,8 +33,7 @@ export const downloadYouTubeAudio = async (
 
     try {
       const { data, error } = await supabase.functions.invoke('youtube-download', {
-        body: JSON.stringify({ url, format }),
-        signal: controller.signal
+        body: JSON.stringify({ url, format })
       });
 
       clearTimeout(timeoutId);
@@ -89,8 +88,7 @@ export const getYouTubeVideoInfo = async (url: string) => {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     const { data, error } = await supabase.functions.invoke('youtube-info', {
-      body: JSON.stringify({ url }),
-      signal: controller.signal
+      body: JSON.stringify({ url })
     });
 
     clearTimeout(timeoutId);
