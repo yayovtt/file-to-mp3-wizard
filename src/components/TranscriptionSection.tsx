@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -87,7 +86,10 @@ export const TranscriptionSection = ({ files, autoProcessEnabled }: Transcriptio
         (progress) => {
           setTranscriptionResults(prev => ({
             ...prev,
-            [file.id]: { ...prev[file.id], progress }
+            [file.id]: { 
+              ...(prev[file.id] || {}), 
+              progress 
+            }
           }));
         }
       );
@@ -152,7 +154,10 @@ export const TranscriptionSection = ({ files, autoProcessEnabled }: Transcriptio
       const result = await processText(text, 'claude', false, (progress) => {
         setProcessingResults(prev => ({
           ...prev,
-          [fileId]: { ...prev[fileId], progress }
+          [fileId]: { 
+            ...(prev[fileId] || {}), 
+            progress 
+          }
         }));
       });
 
