@@ -72,15 +72,15 @@ export const NavigationTabs = ({
           <div className="grid grid-cols-1 xl:grid-cols-1 gap-12">
             {/* Upload Section */}
             <div className="space-y-8">
-              {/* Settings and YouTube Download - Aligned to Right with More Spacing */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+              {/* Settings and YouTube Download - Right Aligned with Better Spacing */}
+              <div className="flex justify-end gap-8 mb-12">
                 {/* Format and Auto-Processing Settings */}
-                <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
+                <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl max-w-md">
                   <div className="flex items-center mb-6">
-                    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-3 rounded-xl ml-4">
+                    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-3 rounded-xl">
                       <Settings className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800">הגדרות המרה</h3>
+                    <h3 className="text-xl font-bold text-gray-800 mr-4">הגדרות המרה</h3>
                   </div>
                   
                   <div className="space-y-6">
@@ -124,8 +124,8 @@ export const NavigationTabs = ({
                   </div>
                 </Card>
 
-                {/* YouTube Download with New Color */}
-                <div className="lg:mr-4">
+                {/* YouTube Download with Better Spacing */}
+                <div className="max-w-md">
                   <YouTubeDownload 
                     onFileDownloaded={handleYouTubeFileDownloaded}
                     outputFormat={outputFormat}

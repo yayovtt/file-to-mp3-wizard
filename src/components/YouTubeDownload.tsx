@@ -96,12 +96,12 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
   };
 
   return (
-    <Card className="p-8 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200 shadow-xl rounded-2xl">
+    <Card className="p-8 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200 shadow-xl rounded-2xl">
       <div className="flex items-center mb-6">
-        <div className="bg-gradient-to-r from-purple-500 to-blue-600 p-3 rounded-xl ml-4">
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-3 rounded-xl">
           <Youtube className="w-6 h-6 text-white" />
         </div>
-        <div>
+        <div className="mr-4">
           <h3 className="text-xl font-bold text-gray-800">הורדה מיוטיוב</h3>
           <p className="text-gray-600">הכנס קישור יוטיוב להורדת אודיו</p>
         </div>
@@ -124,7 +124,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         </div>
 
         {videoInfo && (
-          <Card className="p-4 bg-white border-purple-200">
+          <Card className="p-4 bg-white border-emerald-200">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <img 
                 src={videoInfo.thumbnail} 
@@ -158,7 +158,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         <Button
           onClick={handleDownload}
           disabled={!youtubeUrl || isDownloading}
-          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+          className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
         >
           <Download className="w-4 h-4 mr-2" />
           {isDownloading ? 'מוריד...' : `הורד כ-${outputFormat.toUpperCase()}`}
