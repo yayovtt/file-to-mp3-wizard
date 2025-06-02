@@ -72,9 +72,17 @@ export const NavigationTabs = ({
           <div className="grid grid-cols-1 xl:grid-cols-1 gap-16">
             {/* Upload Section */}
             <div className="space-y-12">
-              {/* Top Section - Settings and YouTube Download */}
+              {/* Top Section - YouTube Download and Settings */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16">
-                {/* Format and Auto-Processing Settings - Above WebM */}
+                {/* YouTube Download - Now on the left */}
+                <div>
+                  <YouTubeDownload 
+                    onFileDownloaded={handleYouTubeFileDownloaded}
+                    outputFormat={outputFormat}
+                  />
+                </div>
+
+                {/* Format and Auto-Processing Settings - Now on the right */}
                 <Card className="p-10 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
                   <div className="flex items-center mb-8">
                     <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-4 rounded-xl">
@@ -123,14 +131,6 @@ export const NavigationTabs = ({
                     </div>
                   </div>
                 </Card>
-
-                {/* YouTube Download - On the other side */}
-                <div>
-                  <YouTubeDownload 
-                    onFileDownloaded={handleYouTubeFileDownloaded}
-                    outputFormat={outputFormat}
-                  />
-                </div>
               </div>
 
               <Card className="p-10 border-2 border-dashed border-blue-300 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
