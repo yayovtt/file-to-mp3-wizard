@@ -151,20 +151,20 @@ export const TranscriptionSection = ({ files, autoProcessEnabled }: Transcriptio
 
       const { processText } = await import('@/services/textProcessingService');
       
-      const result = await processText(text, 'claude', (progress) => {
-        setProcessingResults(prev => ({
-          ...prev,
-          [fileId]: { 
-            ...(prev[fileId] || {}), 
-            progress 
-          }
-        }));
-      });
+      const result = await processText(
+        text, 
+        ['סכם את התוכן הבא:', 'חלץ נקודות מפתח:'], 
+        ['summary', 'keyPoints'], 
+        '', 
+        false, 
+        'claude'
+      );
 
       setProcessingResults(prev => ({
         ...prev,
         [fileId]: {
-          ...result,
+          summary: result,
+          keyPoints: [],
           status: 'completed',
           progress: 100
         }
