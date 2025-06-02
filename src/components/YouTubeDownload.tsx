@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Youtube, Download, FileAudio } from 'lucide-react';
+import { Youtube, Download, Info } from 'lucide-react';
 import { downloadYouTubeAudio, getYouTubeVideoInfo } from '@/services/youtubeService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -104,6 +104,16 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         <div>
           <h3 className="text-xl font-bold text-gray-800">הורדה מיוטיוב</h3>
           <p className="text-gray-600">הכנס קישור יוטיוב להורדת אודיו</p>
+        </div>
+      </div>
+
+      {/* Demo Notice */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start space-x-2 rtl:space-x-reverse">
+          <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800">
+            <strong>הדמיה:</strong> זוהי גרסת דמו. בגרסה האמיתית תוכל להוריד אודיו אמיתי מיוטיוב.
+          </div>
         </div>
       </div>
 
