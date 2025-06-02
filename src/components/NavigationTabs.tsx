@@ -72,61 +72,66 @@ export const NavigationTabs = ({
           <div className="grid grid-cols-1 xl:grid-cols-1 gap-12">
             {/* Upload Section */}
             <div className="space-y-8">
-              {/* Format and Auto-Processing Settings */}
-              <Card className="p-6 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
-                <div className="flex items-center mb-4">
-                  <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-3 rounded-xl ml-4">
-                    <Settings className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-800">הגדרות המרה</h3>
-                </div>
-                
-                <div className="space-y-6">
-                  {/* Output Format Selection */}
-                  <div>
-                    <Label className="text-base font-medium text-gray-700 mb-3 block">פורמט יעד:</Label>
-                    <div className="flex gap-4">
-                      <Button
-                        variant={outputFormat === 'mp3' ? 'default' : 'outline'}
-                        onClick={() => onOutputFormatChange('mp3')}
-                        className="flex-1"
-                      >
-                        MP3
-                      </Button>
-                      <Button
-                        variant={outputFormat === 'webm' ? 'default' : 'outline'}
-                        onClick={() => onOutputFormatChange('webm')}
-                        className="flex-1"
-                      >
-                        WebM
-                      </Button>
+              {/* Settings and YouTube Download - Aligned to Right with More Spacing */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                {/* Format and Auto-Processing Settings */}
+                <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
+                  <div className="flex items-center mb-6">
+                    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-3 rounded-xl ml-4">
+                      <Settings className="w-6 h-6 text-white" />
                     </div>
+                    <h3 className="text-xl font-bold text-gray-800">הגדרות המרה</h3>
                   </div>
-
-                  {/* Auto-Processing Toggle */}
-                  <div className="flex items-center justify-between">
+                  
+                  <div className="space-y-6">
+                    {/* Output Format Selection */}
                     <div>
-                      <Label htmlFor="auto-process" className="text-base font-medium text-gray-700">
-                        עיבוד אוטומטי
-                      </Label>
-                      <p className="text-sm text-gray-600">
-                        התחל תמלול ועיבוד טקסט אוטומטית לאחר המרה
-                      </p>
+                      <Label className="text-base font-medium text-gray-700 mb-3 block">פורמט יעד:</Label>
+                      <div className="flex gap-4">
+                        <Button
+                          variant={outputFormat === 'mp3' ? 'default' : 'outline'}
+                          onClick={() => onOutputFormatChange('mp3')}
+                          className="flex-1"
+                        >
+                          MP3
+                        </Button>
+                        <Button
+                          variant={outputFormat === 'webm' ? 'default' : 'outline'}
+                          onClick={() => onOutputFormatChange('webm')}
+                          className="flex-1"
+                        >
+                          WebM
+                        </Button>
+                      </div>
                     </div>
-                    <Switch
-                      id="auto-process"
-                      checked={autoProcess}
-                      onCheckedChange={onAutoProcessChange}
-                    />
-                  </div>
-                </div>
-              </Card>
 
-              {/* YouTube Download */}
-              <YouTubeDownload 
-                onFileDownloaded={handleYouTubeFileDownloaded}
-                outputFormat={outputFormat}
-              />
+                    {/* Auto-Processing Toggle */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="auto-process" className="text-base font-medium text-gray-700">
+                          עיבוד אוטומטי
+                        </Label>
+                        <p className="text-sm text-gray-600">
+                          התחל תמלול ועיבוד טקסט אוטומטית לאחר המרה
+                        </p>
+                      </div>
+                      <Switch
+                        id="auto-process"
+                        checked={autoProcess}
+                        onCheckedChange={onAutoProcessChange}
+                      />
+                    </div>
+                  </div>
+                </Card>
+
+                {/* YouTube Download with New Color */}
+                <div className="lg:mr-4">
+                  <YouTubeDownload 
+                    onFileDownloaded={handleYouTubeFileDownloaded}
+                    outputFormat={outputFormat}
+                  />
+                </div>
+              </div>
 
               <Card className="p-8 border-2 border-dashed border-blue-300 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
                 <FileUpload onFilesSelected={onFilesSelected} />

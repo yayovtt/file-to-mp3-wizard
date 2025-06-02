@@ -96,9 +96,9 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
   };
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-red-50 to-orange-50 border-red-200">
-      <div className="flex items-center mb-4">
-        <div className="bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-xl ml-4">
+    <Card className="p-8 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200 shadow-xl rounded-2xl">
+      <div className="flex items-center mb-6">
+        <div className="bg-gradient-to-r from-purple-500 to-blue-600 p-3 rounded-xl ml-4">
           <Youtube className="w-6 h-6 text-white" />
         </div>
         <div>
@@ -124,7 +124,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         </div>
 
         {videoInfo && (
-          <Card className="p-4 bg-white border-orange-200">
+          <Card className="p-4 bg-white border-purple-200">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <img 
                 src={videoInfo.thumbnail} 
@@ -158,7 +158,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         <Button
           onClick={handleDownload}
           disabled={!youtubeUrl || isDownloading}
-          className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
+          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
         >
           <Download className="w-4 h-4 mr-2" />
           {isDownloading ? 'מוריד...' : `הורד כ-${outputFormat.toUpperCase()}`}
