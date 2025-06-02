@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -85,14 +84,32 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     }
   }
 
-  function handleEdit(fileId: string, newText: string) {
+  function handleEdit(fileId: string) {
+    setEditingTranscription(fileId);
+    setEditValue(transcriptions[fileId] || '');
+  }
+
+  function handleSaveEdit(fileId: string) {
     setTranscriptions(prev => ({
       ...prev,
-      [fileId]: newText
+      [fileId]: editValue
     }));
+    setEditingTranscription(null);
+    setEditValue('');
+    
+    toast({
+      title: "נשמר!",
+      description: "השינויים נשמרו בהצלחה",
+    });
+  }
+
+  function handleCancelEdit() {
+    setEditingTranscription(null);
+    setEditValue('');
   }
 
   const completedFiles = files.filter(f => f.status === 'completed');
+  const selectedFiles = completedFiles.filter(f => transcriptions[f.id]);
 
   return (
     <div className="space-y-8" dir="rtl">
@@ -190,6 +207,18 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                   </div>
                   
                   <div className="flex gap-3">
+                    {transcriptions[file.id] && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(file.id)}
+                        className="px-4 py-2"
+                      >
+                        <Edit2 className="w-4 h-4 mr-2" />
+                        עריכה
+                      </Button>
+                    )}
+                    
                     <Button
                       onClick={() => handleTranscribe(file)}
                       disabled={!apiKey || transcribingFileId === file.id}
@@ -223,11 +252,39 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
                 {transcriptions[file.id] && (
                   <div className="mt-4">
-                    <TranscriptionResult
-                      transcription={transcriptions[file.id]}
-                      fileName={file.file.name}
-                      onEdit={(newText) => handleEdit(file.id, newText)}
-                    />
+                    {editingTranscription === file.id ? (
+                      <div className="space-y-3">
+                        <Textarea
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="min-h-32 bg-yellow-50 border-yellow-300"
+                          placeholder="ערוך את הטקסט כאן..."
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleSaveEdit(file.id)}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Save className="w-4 h-4 mr-2" />
+                            שמור
+                          </Button>
+                          <Button
+                            onClick={handleCancelEdit}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            ביטול
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <TranscriptionResult
+                        transcription={transcriptions[file.id]}
+                        fileName={file.file.name}
+                      />
+                    )}
                   </div>
                 )}
               </div>
