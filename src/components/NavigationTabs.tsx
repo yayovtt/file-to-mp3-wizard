@@ -80,10 +80,12 @@ export const NavigationTabs = ({
                     <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-4 rounded-xl">
                       <Settings className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-800 mr-6">הגדרות המרה</h3>
                   </div>
                   
                   <div className="space-y-8">
+                    {/* Title moved here above the format selection */}
+                    <h3 className="text-2xl font-bold text-gray-800 text-center">הגדרות המרה</h3>
+                    
                     {/* Output Format Selection */}
                     <div>
                       <Label className="text-lg font-medium text-gray-700 mb-4 block">פורמט יעד:</Label>
