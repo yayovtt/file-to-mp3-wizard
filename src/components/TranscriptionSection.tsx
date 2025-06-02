@@ -151,7 +151,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled }: Transcriptio
 
       const { processText } = await import('@/services/textProcessingService');
       
-      const result = await processText(text, 'claude', false, (progress) => {
+      const result = await processText(text, 'claude', (progress) => {
         setProcessingResults(prev => ({
           ...prev,
           [fileId]: { 
