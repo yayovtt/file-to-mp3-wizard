@@ -29,14 +29,12 @@ export const downloadYouTubeAudio = async (
 
     // Call the Edge Function with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
     try {
       const { data, error } = await supabase.functions.invoke('youtube-download', {
-        body: { url, format },
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        body: JSON.stringify({ url, format }),
+        signal: controller.signal
       });
 
       clearTimeout(timeoutId);
@@ -91,10 +89,8 @@ export const getYouTubeVideoInfo = async (url: string) => {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     const { data, error } = await supabase.functions.invoke('youtube-info', {
-      body: { url },
-      headers: {
-        'Content-Type': 'application/json',
-      }
+      body: JSON.stringify({ url }),
+      signal: controller.signal
     });
 
     clearTimeout(timeoutId);

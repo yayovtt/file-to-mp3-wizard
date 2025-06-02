@@ -12,7 +12,34 @@ serve(async (req) => {
   }
 
   try {
-    const { url, format = 'mp3' } = await req.json()
+    console.log('Request method:', req.method)
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()))
+    
+    let requestBody
+    try {
+      const text = await req.text()
+      console.log('Raw request body:', text)
+      
+      if (!text || text.trim() === '') {
+        throw new Error('Empty request body')
+      }
+      
+      requestBody = JSON.parse(text)
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `שגיאה בפענוח הבקשה: ${parseError.message}` 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    const { url, format = 'mp3' } = requestBody
 
     if (!url) {
       return new Response(
@@ -108,7 +135,10 @@ serve(async (req) => {
         success: false, 
         error: error.message || 'שגיאה בהורדת הקובץ' 
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     )
   }
 })
