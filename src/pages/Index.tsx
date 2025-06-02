@@ -11,11 +11,15 @@ export interface FileItem {
   status: 'pending' | 'converting' | 'completed' | 'error';
   progress: number;
   convertedUrl?: string;
+  outputFormat?: 'mp3' | 'webm';
+  autoProcess?: boolean;
 }
 
 const Index = () => {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isConverting, setIsConverting] = useState(false);
+  const [outputFormat, setOutputFormat] = useState<'mp3' | 'webm'>('mp3');
+  const [autoProcess, setAutoProcess] = useState(false);
 
   const handleFilesSelected = (selectedFiles: File[]) => {
     const newFiles: FileItem[] = selectedFiles.map(file => ({
@@ -23,6 +27,8 @@ const Index = () => {
       file,
       status: 'pending' as const,
       progress: 0,
+      outputFormat,
+      autoProcess,
     }));
     setFiles(prev => [...prev, ...newFiles]);
   };
@@ -82,13 +88,13 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6 leading-tight">
-            המרת אודיו ווידאו ל-MP3
+            המרת אודיו ווידאו ל-MP3/WebM
           </h1>
           <h2 className="text-2xl md:text-3xl font-semibold text-gray-700 mb-4">
             + תמלול וסיכום בעברית
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            המר בקלות כל קובץ אודיו או וידאו ל-MP3 באיכות גבוהה, תמלל תוכן לטקסט וקבל סיכום אוטומטי בעברית
+            המר בקלות כל קובץ אודיו או וידאו ל-MP3 או WebM באיכות גבוהה, תמלל תוכן לטקסט וקבל סיכום אוטומטי בעברית
           </p>
         </div>
 
@@ -99,7 +105,7 @@ const Index = () => {
               <Music className="w-12 h-12 text-white" />
             </div>
             <h3 className="text-3xl font-bold mb-3">המרת קבצים</h3>
-            <p className="text-blue-100 text-lg">המר קבצי אודיו ווידאו ל-MP3</p>
+            <p className="text-blue-100 text-lg">המר קבצי אודיו ווידאו ל-MP3/WebM</p>
           </Card>
           
           <Card className="p-8 text-center bg-gradient-to-br from-purple-500 to-pink-600 text-white border-0 shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
@@ -134,6 +140,10 @@ const Index = () => {
           onConvertAll={handleConvertAll}
           onClearCompleted={clearCompleted}
           isConverting={isConverting}
+          outputFormat={outputFormat}
+          onOutputFormatChange={setOutputFormat}
+          autoProcess={autoProcess}
+          onAutoProcessChange={setAutoProcess}
         />
       </div>
     </div>

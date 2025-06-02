@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Download, FileAudio } from 'lucide-react';
+import { Download, FileAudio, FileVideo } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
 interface DownloadSectionProps {
@@ -12,7 +12,8 @@ export const DownloadSection = ({ files }: DownloadSectionProps) => {
     if (file.convertedUrl) {
       const link = document.createElement('a');
       link.href = file.convertedUrl;
-      link.download = file.file.name.replace(/\.[^/.]+$/, '.mp3');
+      const extension = file.outputFormat || 'mp3';
+      link.download = file.file.name.replace(/\.[^/.]+$/, `.${extension}`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -48,31 +49,41 @@ export const DownloadSection = ({ files }: DownloadSectionProps) => {
       </div>
 
       <div className="space-y-3">
-        {files.map((file) => (
-          <div key={file.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-            <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              <div className="bg-green-100 p-2 rounded-full">
-                <FileAudio className="w-4 h-4 text-green-600" />
+        {files.map((file) => {
+          const outputFormat = file.outputFormat || 'mp3';
+          const isVideo = outputFormat === 'webm';
+          
+          return (
+            <div key={file.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                <div className="bg-green-100 p-2 rounded-full">
+                  {isVideo ? (
+                    <FileVideo className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <FileAudio className="w-4 h-4 text-green-600" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {file.file.name.replace(/\.[^/.]+$/, `.${outputFormat}`)}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatFileSize(file.file.size)} • {outputFormat.toUpperCase()}
+                    {file.autoProcess && <span className="text-blue-600"> • עיבוד אוטומטי</span>}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  {file.file.name.replace(/\.[^/.]+$/, '.mp3')}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formatFileSize(file.file.size)} • MP3
-                </p>
-              </div>
+              
+              <Button
+                size="sm"
+                onClick={() => handleDownload(file)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
             </div>
-            
-            <Button
-              size="sm"
-              onClick={() => handleDownload(file)}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
