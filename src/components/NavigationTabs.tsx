@@ -8,9 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { TranscriptionSection } from '@/components/TranscriptionSection';
-import { DownloadSection } from '@/components/DownloadSection';
 import { YouTubeDownload } from '@/components/YouTubeDownload';
-import { FileText, FileAudio, Download, Sparkles, Settings } from 'lucide-react';
+import { FileText, FileAudio, Sparkles, Settings } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
 interface NavigationTabsProps {
@@ -43,7 +42,6 @@ export const NavigationTabs = ({
     console.log('YouTube file downloaded:', file.name);
     if (subtitles) {
       console.log('Subtitles available:', subtitles);
-      // Here you could save subtitles or pass them to a transcription component
     }
     onFilesSelected([file]);
   };
@@ -69,7 +67,7 @@ export const NavigationTabs = ({
         </TabsList>
 
         <TabsContent value="conversion" className="space-y-8">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 xl:grid-cols-1 gap-12">
             {/* Upload Section */}
             <div className="space-y-8">
               {/* Format and Auto-Processing Settings */}
@@ -169,27 +167,6 @@ export const NavigationTabs = ({
                   <span className="font-medium">יעד:</span> MP3, WebM (16 kbps)
                 </div>
               </Card>
-            </div>
-
-            {/* Download Section */}
-            <div className="space-y-8">
-              {completedFiles.length > 0 && (
-                <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
-                  <div className="flex items-center mb-6">
-                    <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl ml-4">
-                      <Download className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-800">קבצים מוכנים להורדה</h3>
-                      <p className="text-gray-600">הקבצים המומרים שלך מוכנים</p>
-                    </div>
-                    <Badge variant="secondary" className="ml-4 px-4 py-2 text-lg">
-                      {completedFiles.length}
-                    </Badge>
-                  </div>
-                  <DownloadSection files={completedFiles} />
-                </Card>
-              )}
             </div>
           </div>
         </TabsContent>

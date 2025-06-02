@@ -1,7 +1,8 @@
 
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { FileAudio, FileVideo, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FileAudio, FileVideo, CheckCircle, AlertCircle, Loader2, Download } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
 interface ConversionStatusProps {
@@ -9,6 +10,18 @@ interface ConversionStatusProps {
 }
 
 export const ConversionStatus = ({ files }: ConversionStatusProps) => {
+  const handleDownload = (file: FileItem) => {
+    if (file.convertedUrl) {
+      const link = document.createElement('a');
+      link.href = file.convertedUrl;
+      const extension = file.outputFormat || 'mp3';
+      link.download = file.file.name.replace(/\.[^/.]+$/, `.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   const getStatusIcon = (status: FileItem['status'], isVideo: boolean) => {
     const iconProps = "w-4 h-4";
     const BaseIcon = isVideo ? FileVideo : FileAudio;
@@ -68,35 +81,72 @@ export const ConversionStatus = ({ files }: ConversionStatusProps) => {
     );
   };
 
+  const getCompressionInfo = (file: FileItem) => {
+    const originalSize = file.file.size;
+    const compressedSize = file.convertedSize || originalSize;
+    const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+    
+    return {
+      originalSize,
+      compressedSize,
+      compressionRatio: parseFloat(compressionRatio)
+    };
+  };
+
   return (
     <div className="space-y-4">
-      {files.map((file) => (
-        <div key={file.id} className="p-4 bg-gray-50 rounded-lg border">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              {getStatusIcon(file.status, isVideoFile(file.file.name))}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {file.file.name}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formatFileSize(file.file.size)} • {isVideoFile(file.file.name) ? 'וידאו → MP3' : 'אודיו → MP3'}
-                </p>
+      {files.map((file) => {
+        const compressionInfo = getCompressionInfo(file);
+        
+        return (
+          <div key={file.id} className="p-4 bg-gray-50 rounded-lg border">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse flex-1">
+                {getStatusIcon(file.status, isVideoFile(file.file.name))}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {file.file.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatFileSize(compressionInfo.originalSize)}
+                    {file.status === 'completed' && file.convertedSize && (
+                      <span>
+                        {' → '}{formatFileSize(compressionInfo.compressedSize)}
+                        {compressionInfo.compressionRatio > 0 && (
+                          <span className="text-green-600 font-medium"> • חסכון של {compressionInfo.compressionRatio}%</span>
+                        )}
+                      </span>
+                    )}
+                    {' • '}{isVideoFile(file.file.name) ? 'וידאו' : 'אודיו'} → {(file.outputFormat || 'mp3').toUpperCase()}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {file.status === 'completed' && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleDownload(file)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                )}
+                {getStatusBadge(file.status)}
               </div>
             </div>
-            {getStatusBadge(file.status)}
+            
+            {file.status === 'converting' && (
+              <div className="space-y-2">
+                <Progress value={file.progress} className="h-2" />
+                <p className="text-xs text-center text-gray-500">
+                  {file.progress}% הושלם
+                </p>
+              </div>
+            )}
           </div>
-          
-          {file.status === 'converting' && (
-            <div className="space-y-2">
-              <Progress value={file.progress} className="h-2" />
-              <p className="text-xs text-center text-gray-500">
-                {file.progress}% הושלם
-              </p>
-            </div>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
