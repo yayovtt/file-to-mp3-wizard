@@ -101,11 +101,11 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         <div className="bg-gradient-to-r from-red-600 to-red-700 p-4 rounded-xl">
           <Youtube className="w-7 h-7 text-white" />
         </div>
-        <div className="mr-6">
-          <h3 className="text-2xl font-bold text-gray-800">הורדה מיוטיוב</h3>
-          <p className="text-lg text-gray-600">הכנס קישור יוטיוב להורדת אודיו</p>
-        </div>
       </div>
+
+      {/* Title moved here and aligned to the right */}
+      <h3 className="text-2xl font-bold text-gray-800 text-right mb-2">הורדה מיוטיוב</h3>
+      <p className="text-lg text-gray-600 text-right mb-8">הכנס קישור יוטיוב להורדת אודיו</p>
 
       <div className="space-y-6">
         <div>

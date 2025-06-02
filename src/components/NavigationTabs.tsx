@@ -83,8 +83,8 @@ export const NavigationTabs = ({
                   </div>
                   
                   <div className="space-y-8">
-                    {/* Title moved here above the format selection */}
-                    <h3 className="text-2xl font-bold text-gray-800 text-center">הגדרות המרה</h3>
+                    {/* Title moved here and aligned to the right */}
+                    <h3 className="text-2xl font-bold text-gray-800 text-right">הגדרות המרה</h3>
                     
                     {/* Output Format Selection */}
                     <div>
