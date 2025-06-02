@@ -27,40 +27,57 @@ export const downloadYouTubeAudio = async (
 
     console.log(`Processing YouTube video: ${url}`);
 
-    // Call the Edge Function
-    const { data, error } = await supabase.functions.invoke('youtube-download', {
-      body: { url, format }
-    });
+    // Call the Edge Function with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    if (error) {
-      console.error('Edge function error:', error);
-      throw new Error(`שגיאה בהורדה: ${error.message}`);
+    try {
+      const { data, error } = await supabase.functions.invoke('youtube-download', {
+        body: { url, format },
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(`שגיאה בהורדה: ${error.message}`);
+      }
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'שגיאה בהורדת הקובץ');
+      }
+
+      // Convert base64 audio data to blob
+      const audioData = atob(data.audioData);
+      const audioArray = new Uint8Array(audioData.length);
+      for (let i = 0; i < audioData.length; i++) {
+        audioArray[i] = audioData.charCodeAt(i);
+      }
+
+      const audioBlob = new Blob([audioArray], { 
+        type: format === 'mp3' ? 'audio/mpeg' : 'video/webm' 
+      });
+
+      const result = {
+        audioBlob,
+        title: data.title,
+        duration: data.duration,
+        subtitles: data.subtitles
+      };
+
+      console.log(`YouTube download completed: ${data.title}`);
+      return result;
+
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error('הורדת הקובץ נכשלה - זמן הפסקה');
+      }
+      throw fetchError;
     }
-
-    if (!data.success) {
-      throw new Error(data.error || 'שגיאה בהורדת הקובץ');
-    }
-
-    // Convert base64 audio data to blob
-    const audioData = atob(data.audioData);
-    const audioArray = new Uint8Array(audioData.length);
-    for (let i = 0; i < audioData.length; i++) {
-      audioArray[i] = audioData.charCodeAt(i);
-    }
-
-    const audioBlob = new Blob([audioArray], { 
-      type: format === 'mp3' ? 'audio/mpeg' : 'video/webm' 
-    });
-
-    const result = {
-      audioBlob,
-      title: data.title,
-      duration: data.duration,
-      subtitles: data.subtitles
-    };
-
-    console.log(`YouTube download completed: ${data.title}`);
-    return result;
 
   } catch (error) {
     console.error('Error downloading YouTube audio:', error);
@@ -70,17 +87,25 @@ export const downloadYouTubeAudio = async (
 
 export const getYouTubeVideoInfo = async (url: string) => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const { data, error } = await supabase.functions.invoke('youtube-info', {
-      body: { url }
+      body: { url },
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
+
+    clearTimeout(timeoutId);
 
     if (error) {
       console.error('Edge function error:', error);
       throw new Error(`שגיאה בקבלת מידע: ${error.message}`);
     }
 
-    if (!data.success) {
-      throw new Error(data.error || 'שגיאה בקבלת מידע על הוידאו');
+    if (!data || !data.success) {
+      throw new Error(data?.error || 'שגיאה בקבלת מידע על הוידאו');
     }
 
     return {
@@ -91,6 +116,9 @@ export const getYouTubeVideoInfo = async (url: string) => {
     };
   } catch (error) {
     console.error('Error getting video info:', error);
+    if (error.name === 'AbortError') {
+      throw new Error('קבלת מידע על הוידאו נכשלה - זמן הפסקה');
+    }
     throw error;
   }
 };
