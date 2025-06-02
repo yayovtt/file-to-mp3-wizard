@@ -84,43 +84,9 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
     });
   };
 
-  const getFileForTranscription = async (file: FileItem): Promise<File> => {
-    // If the file has been converted and has a URL, use the converted file
-    if (file.convertedUrl) {
-      console.log(`Using converted file for transcription. Original size: ${file.file.size} bytes, Converted size: ${file.convertedSize} bytes`);
-      
-      try {
-        // Fetch the converted file blob from the URL
-        const response = await fetch(file.convertedUrl);
-        const blob = await response.blob();
-        
-        // Create a new File object from the blob
-        const convertedFile = new File([blob], file.file.name, { type: blob.type });
-        console.log(`Converted file ready for transcription: ${convertedFile.size} bytes`);
-        
-        return convertedFile;
-      } catch (error) {
-        console.error('Error fetching converted file, falling back to original:', error);
-        return file.file;
-      }
-    }
-    
-    // Fallback to original file
-    console.log(`Using original file for transcription: ${file.file.size} bytes`);
-    return file.file;
-  };
-
   const handleTranscribe = async (file: FileItem) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
-    
-    // Get the correct file for transcription (converted if available)
-    const fileForTranscription = await getFileForTranscription(file);
-    const isLargeFile = fileForTranscription.size > 49 * 1024 * 1024; // 49MB
-    
-    console.log(`Starting transcription for file: ${file.file.name}`);
-    console.log(`Original file size: ${file.file.size} bytes`);
-    console.log(`File for transcription size: ${fileForTranscription.size} bytes`);
-    console.log(`Will be chunked: ${isLargeFile}`);
+    const isLargeFile = file.file.size > 49 * 1024 * 1024; // 49MB
     
     if (existingIndex >= 0) {
       setTranscriptions(prev => prev.map((t, i) => 
@@ -128,8 +94,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
           ...t, 
           isTranscribing: true, 
           transcriptionProgress: 0,
-          wasChunked: isLargeFile,
-          fileSize: fileForTranscription.size
+          wasChunked: isLargeFile
         } : t
       ));
     } else {
@@ -141,7 +106,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
         isProcessing: false,
         transcriptionProgress: 0,
         processingProgress: 0,
-        fileSize: fileForTranscription.size,
+        fileSize: file.file.size,
         wasChunked: isLargeFile
       }]);
     }
@@ -150,13 +115,13 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
       if (isLargeFile) {
         toast({
           title: 'קובץ גדול זוהה',
-          description: `הקובץ (${(fileForTranscription.size / 1024 / 1024).toFixed(1)}MB) יפוצל אוטומטית לחלקים קטנים יותר לתמלול`,
+          description: `הקובץ (${(file.file.size / 1024 / 1024).toFixed(1)}MB) יפוצל אוטומטית לחלקים קטנים יותר לתמלול`,
         });
       }
       
-      // Use the converted file for transcription
+      // Use the new chunked transcription with progress callback
       const transcription = await transcribeAudio(
-        fileForTranscription, 
+        file.file, 
         groqApiKey,
         (progress) => {
           setTranscriptions(prev => prev.map(t => 
@@ -174,7 +139,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
       ));
 
       const successMessage = isLargeFile 
-        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(fileForTranscription.size / (49 * 1024 * 1024))} חלקים)`
+        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(file.file.size / (49 * 1024 * 1024))} חלקים)`
         : `התמלול של ${file.file.name} הושלם בהצלחה`;
 
       toast({
@@ -192,7 +157,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
           isProcessing: false,
           transcriptionProgress: 100,
           processingProgress: 0,
-          fileSize: fileForTranscription.size
+          fileSize: file.file.size
         };
         
         // Start auto text processing with default options
@@ -447,9 +412,8 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
           
           <div className="grid gap-4">
             {completedFiles.map((file) => {
-              const displaySize = file.convertedSize || file.file.size;
-              const isLargeFile = displaySize > 49 * 1024 * 1024;
-              const estimatedChunks = Math.ceil(displaySize / (49 * 1024 * 1024));
+              const isLargeFile = file.file.size > 49 * 1024 * 1024;
+              const estimatedChunks = Math.ceil(file.file.size / (49 * 1024 * 1024));
               const outputFormat = file.outputFormat || 'mp3';
               
               return (
@@ -463,12 +427,8 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
                         {file.file.name}
                       </p>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>מוכן לתמלול • {(displaySize / 1024 / 1024).toFixed(2)} MB • {outputFormat.toUpperCase()}</p>
-                        {file.convertedSize && (
-                          <p className="text-blue-600">דחוס מ-{(file.file.size / 1024 / 1024).toFixed(2)}MB</p>
-                        )}
+                        <p>מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB • {outputFormat.toUpperCase()}</p>
                         {file.autoProcess && <p className="text-green-600 font-medium">עיבוד אוטומטי מופעל</p>}
-                        {isLargeFile && <p className="text-orange-600">יפוצל ל-{estimatedChunks} חלקים</p>}
                       </div>
                     </div>
                   </div>
@@ -523,7 +483,6 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
                       <h4 className="font-bold text-gray-900 text-lg">{result.fileName}</h4>
                       <div className="text-sm text-gray-600">
                         <p>תמלול ועיבוד אוטומטי • {(result.fileSize / 1024 / 1024).toFixed(2)} MB</p>
-                        {result.wasChunked && <p className="text-orange-600">פוצל לחלקים קטנים</p>}
                       </div>
                     </div>
                   </div>

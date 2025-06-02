@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Youtube, Download } from 'lucide-react';
+import { Youtube, Download, FileAudio } from 'lucide-react';
 import { downloadYouTubeAudio, getYouTubeVideoInfo } from '@/services/youtubeService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -60,7 +60,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
           }
           return prev + 10;
         });
-      }, 500);
+      }, 200);
 
       const result = await downloadYouTubeAudio(youtubeUrl, outputFormat);
       
