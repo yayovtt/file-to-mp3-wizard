@@ -9,8 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { TranscriptionSection } from '@/components/TranscriptionSection';
 import { YouTubeDownload } from '@/components/YouTubeDownload';
+import { ThemeSelector, Theme, themes } from '@/components/ThemeSelector';
 import { FileText, FileAudio, Sparkles, Settings } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
+import { useState } from 'react';
 
 interface NavigationTabsProps {
   files: FileItem[];
@@ -37,6 +39,8 @@ export const NavigationTabs = ({
   autoProcess,
   onAutoProcessChange
 }: NavigationTabsProps) => {
+  const [currentTheme, setCurrentTheme] = useState<Theme>(themes[0]);
+  
   const completedFiles = files.filter(f => f.status === 'completed');
   const pendingFiles = files.filter(f => f.status === 'pending');
 
@@ -54,14 +58,14 @@ export const NavigationTabs = ({
         <TabsList className="grid w-full grid-cols-2 mb-8 bg-white shadow-lg rounded-2xl p-2 h-16">
           <TabsTrigger 
             value="conversion" 
-            className="flex items-center justify-center space-x-3 space-x-reverse text-lg font-semibold py-4 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+            className={`flex items-center justify-center space-x-3 space-x-reverse text-lg font-semibold py-4 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:${currentTheme.primary} data-[state=active]:text-white`}
           >
             <FileAudio className="w-6 h-6" />
             <span>המרת קבצים</span>
           </TabsTrigger>
           <TabsTrigger 
             value="transcription"
-            className="flex items-center justify-center space-x-3 space-x-reverse text-lg font-semibold py-4 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white"
+            className={`flex items-center justify-center space-x-3 space-x-reverse text-lg font-semibold py-4 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:${currentTheme.primary} data-[state=active]:text-white`}
           >
             <FileText className="w-6 h-6" />
             <span>תמלול</span>
@@ -77,7 +81,7 @@ export const NavigationTabs = ({
                 {/* Format and Auto-Processing Settings - Now on the right */}
                 <Card className="p-10 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
                   <div className="flex items-center mb-8">
-                    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-4 rounded-xl">
+                    <div className={`bg-gradient-to-r ${currentTheme.secondary} p-4 rounded-xl`}>
                       <Settings className="w-7 h-7 text-white" />
                     </div>
                   </div>
@@ -131,6 +135,7 @@ export const NavigationTabs = ({
                   <YouTubeDownload 
                     onFileDownloaded={handleYouTubeFileDownloaded}
                     outputFormat={outputFormat}
+                    theme={currentTheme}
                   />
                 </div>
               </div>
@@ -149,7 +154,7 @@ export const NavigationTabs = ({
                           onClick={onConvertAll}
                           disabled={isConverting}
                           size="lg"
-                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-10 py-4 text-xl rounded-xl shadow-lg"
+                          className={`bg-gradient-to-r ${currentTheme.primary} hover:opacity-90 px-10 py-4 text-xl rounded-xl shadow-lg`}
                         >
                           <Sparkles className="w-6 h-6 mr-3" />
                           המר הכל ל-{outputFormat.toUpperCase()}
@@ -167,7 +172,7 @@ export const NavigationTabs = ({
               )}
 
               {/* Supported Formats */}
-              <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-300 shadow-lg rounded-xl">
+              <Card className={`p-6 bg-gradient-to-br ${currentTheme.background} border-indigo-300 shadow-lg rounded-xl`}>
                 <h3 className="text-xl font-bold mb-4 text-gray-800">פורמטים נתמכים</h3>
                 <div className="text-base text-gray-600">
                   <span className="font-medium">אודיו:</span> MP3, WAV, FLAC, AAC, OGG<br/>
@@ -184,6 +189,8 @@ export const NavigationTabs = ({
           <TranscriptionSection files={files} autoProcessEnabled={autoProcess} />
         </TabsContent>
       </Tabs>
+      
+      <ThemeSelector currentTheme={currentTheme} onThemeChange={setCurrentTheme} />
     </div>
   );
 };

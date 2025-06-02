@@ -8,13 +8,15 @@ import { Progress } from '@/components/ui/progress';
 import { Youtube, Download } from 'lucide-react';
 import { downloadYouTubeAudio, getYouTubeVideoInfo } from '@/services/youtubeService';
 import { useToast } from '@/hooks/use-toast';
+import { Theme } from '@/components/ThemeSelector';
 
 interface YouTubeDownloadProps {
   onFileDownloaded: (file: File, subtitles?: string) => void;
   outputFormat: 'mp3' | 'webm';
+  theme?: Theme;
 }
 
-export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownloadProps) => {
+export const YouTubeDownload = ({ onFileDownloaded, outputFormat, theme }: YouTubeDownloadProps) => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -95,10 +97,13 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
     }
   };
 
+  const accentGradient = theme?.accent || 'from-red-600 to-red-700';
+  const backgroundGradient = theme?.background || 'from-red-50 to-red-100';
+
   return (
-    <Card className="p-10 bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-xl rounded-2xl">
+    <Card className={`p-10 bg-gradient-to-br ${backgroundGradient} border-red-200 shadow-xl rounded-2xl`}>
       <div className="flex items-center mb-8">
-        <div className="bg-gradient-to-r from-red-600 to-red-700 p-4 rounded-xl">
+        <div className={`bg-gradient-to-r ${accentGradient} p-4 rounded-xl`}>
           <Youtube className="w-7 h-7 text-white" />
         </div>
       </div>
@@ -158,7 +163,7 @@ export const YouTubeDownload = ({ onFileDownloaded, outputFormat }: YouTubeDownl
         <Button
           onClick={handleDownload}
           disabled={!youtubeUrl || isDownloading}
-          className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 py-4 text-xl"
+          className={`w-full bg-gradient-to-r ${accentGradient} hover:opacity-90 py-4 text-xl`}
         >
           <Download className="w-5 h-5 mr-3" />
           {isDownloading ? 'מוריד...' : `הורד כ-${outputFormat.toUpperCase()}`}
