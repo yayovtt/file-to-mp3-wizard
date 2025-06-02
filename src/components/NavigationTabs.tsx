@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { TranscriptionSection } from '@/components/TranscriptionSection';
 import { DownloadSection } from '@/components/DownloadSection';
+import { YouTubeDownload } from '@/components/YouTubeDownload';
 import { FileText, FileAudio, Download, Sparkles, Settings } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
@@ -37,6 +38,15 @@ export const NavigationTabs = ({
 }: NavigationTabsProps) => {
   const completedFiles = files.filter(f => f.status === 'completed');
   const pendingFiles = files.filter(f => f.status === 'pending');
+
+  const handleYouTubeFileDownloaded = (file: File, subtitles?: string) => {
+    console.log('YouTube file downloaded:', file.name);
+    if (subtitles) {
+      console.log('Subtitles available:', subtitles);
+      // Here you could save subtitles or pass them to a transcription component
+    }
+    onFilesSelected([file]);
+  };
 
   return (
     <div dir="rtl">
@@ -112,6 +122,12 @@ export const NavigationTabs = ({
                 </div>
               </Card>
 
+              {/* YouTube Download */}
+              <YouTubeDownload 
+                onFileDownloaded={handleYouTubeFileDownloaded}
+                outputFormat={outputFormat}
+              />
+
               <Card className="p-8 border-2 border-dashed border-blue-300 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl">
                 <FileUpload onFilesSelected={onFilesSelected} />
               </Card>
@@ -149,7 +165,8 @@ export const NavigationTabs = ({
                 <div className="text-sm text-gray-600">
                   <span className="font-medium">אודיו:</span> MP3, WAV, FLAC, AAC, OGG<br/>
                   <span className="font-medium">וידאו:</span> MP4, AVI, MOV, MKV, WebM<br/>
-                  <span className="font-medium">יעד:</span> MP3, WebM
+                  <span className="font-medium">יוטיוב:</span> כל קישור יוטיוב רגיל או Shorts<br/>
+                  <span className="font-medium">יעד:</span> MP3, WebM (16 kbps)
                 </div>
               </Card>
             </div>
