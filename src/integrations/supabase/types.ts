@@ -251,6 +251,56 @@ export type Database = {
         }
         Relationships: []
       }
+      files: {
+        Row: {
+          client_id: number | null
+          created_at: string
+          file_name: string
+          file_size: number
+          file_type: string
+          google_drive_id: string | null
+          id: string
+          storage_path: string
+          sync_status: string
+          updated_at: string
+          uploaded_by_user_id: string | null
+        }
+        Insert: {
+          client_id?: number | null
+          created_at?: string
+          file_name: string
+          file_size: number
+          file_type: string
+          google_drive_id?: string | null
+          id?: string
+          storage_path: string
+          sync_status?: string
+          updated_at?: string
+          uploaded_by_user_id?: string | null
+        }
+        Update: {
+          client_id?: number | null
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          google_drive_id?: string | null
+          id?: string
+          storage_path?: string
+          sync_status?: string
+          updated_at?: string
+          uploaded_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "files_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
