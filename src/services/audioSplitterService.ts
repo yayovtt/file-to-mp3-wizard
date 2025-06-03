@@ -9,18 +9,18 @@ interface AudioChunk {
 export const splitAudioFile = async (file: File, maxSizeBytes: number = 49 * 1024 * 1024): Promise<AudioChunk[]> => {
   console.log(`Starting audio file processing: ${file.name}, size: ${file.size} bytes`);
   
-  // If file is smaller than max size, return as single chunk
+  // If file is smaller than max size, return as single chunk WITH ORIGINAL FORMAT
   if (file.size <= maxSizeBytes) {
-    console.log('File is small enough, returning as single chunk');
+    console.log('File is small enough, returning original file as single chunk');
     return [{
-      blob: file,
+      blob: file, // Keep original file and format
       startTime: 0,
       endTime: 0,
       chunkIndex: 0
     }];
   }
 
-  console.log('File is large, splitting into chunks');
+  console.log('File is large, splitting into chunks and converting to WAV');
   
   return new Promise((resolve, reject) => {
     try {
@@ -70,8 +70,8 @@ export const splitAudioFile = async (file: File, maxSizeBytes: number = 49 * 102
               }
             }
 
-            // Convert to blob
-            const chunkBlob = await audioBufferToBlob(chunkBuffer, file.type);
+            // Convert to blob only for large files that need splitting
+            const chunkBlob = await audioBufferToBlob(chunkBuffer, 'audio/wav');
             console.log(`Chunk ${chunkIndex} created, size: ${chunkBlob.size} bytes`);
             
             chunks.push({
