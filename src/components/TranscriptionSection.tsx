@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Loader2, Download, MessageSquare, Info, Save, Edit3, Sparkles } from 'lucide-react';
+import { FileText, Loader2, Download, MessageSquare, Info, Save, Edit3 } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
 import { processText, AIProvider } from '@/services/textProcessingService';
@@ -30,31 +30,14 @@ interface TranscriptionResult {
 
 interface TranscriptionSectionProps {
   files: FileItem[];
-  autoProcessEnabled?: boolean;
 }
 
-export const TranscriptionSection = ({ files, autoProcessEnabled = false }: TranscriptionSectionProps) => {
+export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const groqApiKey = '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';
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const [fontSize, setFontSize] = useState(16);
   const [fontFamily, setFontFamily] = useState('Arial');
   const { toast } = useToast();
-
-  // Auto-process files when they complete conversion
-  useEffect(() => {
-    if (!autoProcessEnabled) return;
-
-    const autoProcessFiles = files.filter(file => 
-      file.status === 'completed' && 
-      file.autoProcess && 
-      !transcriptions.find(t => t.fileId === file.id)
-    );
-
-    autoProcessFiles.forEach(file => {
-      // Start transcription automatically
-      handleTranscribe(file);
-    });
-  }, [files, autoProcessEnabled, transcriptions]);
 
   // Progress simulation helper function
   const simulateProgress = (fileId: string, type: 'processing', duration: number): Promise<void> => {
@@ -146,31 +129,6 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
         title: 'תמלול הושלם',
         description: successMessage,
       });
-
-      // Auto-process text if enabled
-      if (file.autoProcess && transcription.trim()) {
-        const transcriptionResult = transcriptions.find(t => t.fileId === file.id) || {
-          fileId: file.id,
-          fileName: file.file.name,
-          transcription,
-          isTranscribing: false,
-          isProcessing: false,
-          transcriptionProgress: 100,
-          processingProgress: 0,
-          fileSize: file.file.size
-        };
-        
-        // Start auto text processing with default options
-        setTimeout(() => {
-          handleProcessText(
-            transcriptionResult, 
-            ['סכם את הטקסט הבא בצורה קצרה וברורה'], 
-            ['סיכום'], 
-            false, 
-            'chatgpt'
-          );
-        }, 1000);
-      }
     } catch (error) {
       console.error('Transcription error:', error);
       setTranscriptions(prev => prev.map(t => 
@@ -364,21 +322,6 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
 
   return (
     <div className="space-y-8" dir="rtl">
-      {/* Auto-processing info */}
-      {autoProcessEnabled && (
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg rounded-xl">
-          <div className="flex items-center mb-4">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-3 rounded-xl ml-4">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">עיבוד אוטומטי פעיל</h3>
-              <p className="text-gray-600 text-sm">קבצים שהומרו יתחילו תמלול ועיבוד טקסט אוטומטי</p>
-            </div>
-          </div>
-        </Card>
-      )}
-
       {/* Font Controls */}
       {transcriptions.length > 0 && (
         <FontControls
@@ -414,7 +357,6 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
             {completedFiles.map((file) => {
               const isLargeFile = file.file.size > 49 * 1024 * 1024;
               const estimatedChunks = Math.ceil(file.file.size / (49 * 1024 * 1024));
-              const outputFormat = file.outputFormat || 'mp3';
               
               return (
                 <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
@@ -427,8 +369,7 @@ export const TranscriptionSection = ({ files, autoProcessEnabled = false }: Tran
                         {file.file.name}
                       </p>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB • {outputFormat.toUpperCase()}</p>
-                        {file.autoProcess && <p className="text-green-600 font-medium">עיבוד אוטומטי מופעל</p>}
+                        <p>מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Download, FileAudio, FileVideo } from 'lucide-react';
+import { Download, FileAudio } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 
 interface DownloadSectionProps {
@@ -12,8 +12,7 @@ export const DownloadSection = ({ files }: DownloadSectionProps) => {
     if (file.convertedUrl) {
       const link = document.createElement('a');
       link.href = file.convertedUrl;
-      const extension = file.outputFormat || 'mp3';
-      link.download = file.file.name.replace(/\.[^/.]+$/, `.${extension}`);
+      link.download = file.file.name.replace(/\.[^/.]+$/, '.mp3');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -36,18 +35,6 @@ export const DownloadSection = ({ files }: DownloadSectionProps) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getCompressionInfo = (file: FileItem) => {
-    const originalSize = file.file.size;
-    const compressedSize = file.convertedSize || originalSize;
-    const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
-    
-    return {
-      originalSize,
-      compressedSize,
-      compressionRatio: parseFloat(compressionRatio)
-    };
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -61,45 +48,31 @@ export const DownloadSection = ({ files }: DownloadSectionProps) => {
       </div>
 
       <div className="space-y-3">
-        {files.map((file) => {
-          const outputFormat = file.outputFormat || 'mp3';
-          const isVideo = outputFormat === 'webm';
-          const compressionInfo = getCompressionInfo(file);
-          
-          return (
-            <div key={file.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                <div className="bg-green-100 p-2 rounded-full">
-                  {isVideo ? (
-                    <FileVideo className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <FileAudio className="w-4 h-4 text-green-600" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {file.file.name.replace(/\.[^/.]+$/, `.${outputFormat}`)}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formatFileSize(compressionInfo.originalSize)} → {formatFileSize(compressionInfo.compressedSize)} • {outputFormat.toUpperCase()} • 16 kbps
-                    {compressionInfo.compressionRatio > 0 && (
-                      <span className="text-green-600 font-medium"> • חסכון של {compressionInfo.compressionRatio}%</span>
-                    )}
-                    {file.autoProcess && <span className="text-blue-600"> • עיבוד אוטומטי</span>}
-                  </p>
-                </div>
+        {files.map((file) => (
+          <div key={file.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="bg-green-100 p-2 rounded-full">
+                <FileAudio className="w-4 h-4 text-green-600" />
               </div>
-              
-              <Button
-                size="sm"
-                onClick={() => handleDownload(file)}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Download className="w-4 h-4" />
-              </Button>
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {file.file.name.replace(/\.[^/.]+$/, '.mp3')}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formatFileSize(file.file.size)} • MP3
+                </p>
+              </div>
             </div>
-          );
-        })}
+            
+            <Button
+              size="sm"
+              onClick={() => handleDownload(file)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
       </div>
     </div>
   );
