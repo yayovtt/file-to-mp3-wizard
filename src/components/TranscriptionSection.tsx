@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Loader2, Download, MessageSquare, Info, Save, Edit3 } from 'lucide-react';
+import { FileText, Loader2, Download, MessageSquare, Info, Save, Edit3, Upload, Music, Video } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeAudio } from '@/services/transcriptionService';
 import { processText, AIProvider } from '@/services/textProcessingService';
@@ -65,6 +65,37 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
       updateProgress();
     });
+  };
+
+  const handleDirectFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const supportedFiles = selectedFiles.filter(file => 
+      // Audio files
+      file.type.startsWith('audio/') || 
+      ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma'].some(ext => 
+        file.name.toLowerCase().endsWith(ext)
+      ) ||
+      // Video files
+      file.type.startsWith('video/') ||
+      ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm', '.m4v'].some(ext => 
+        file.name.toLowerCase().endsWith(ext)
+      )
+    );
+
+    if (supportedFiles.length > 0) {
+      supportedFiles.forEach(file => {
+        const fileItem = {
+          id: Math.random().toString(36).substr(2, 9),
+          file,
+          status: 'completed' as const,
+          progress: 100,
+        };
+        handleTranscribe(fileItem);
+      });
+    }
+    
+    // Reset input
+    e.target.value = '';
   };
 
   const handleTranscribe = async (file: FileItem) => {
@@ -322,6 +353,63 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
   return (
     <div className="space-y-8" dir="rtl">
+      {/* Direct File Upload Section */}
+      <Card className="p-8 bg-gradient-to-br from-blue-50 to-purple-50 backdrop-blur-sm shadow-lg border-2 border-blue-200 rounded-xl">
+        <div className="flex items-center mb-6">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl ml-4">
+            <Upload className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-gray-800">העלאה ישירה לתמלול</h3>
+            <p className="text-gray-600 text-sm">בחר קבצי אודיו או וידאו לתמלול מיידי</p>
+          </div>
+        </div>
+        
+        <div className="text-center p-8 rounded-xl border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 transition-all duration-300 group cursor-pointer">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 rounded-full group-hover:scale-110 transition-transform duration-300">
+                <Music className="w-6 h-6 text-white" />
+              </div>
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 rounded-full group-hover:scale-110 transition-transform duration-300">
+                <Video className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-gray-700">
+                בחר קבצים לתמלול מיידי
+              </h3>
+              <p className="text-gray-500">
+                הקבצים יתמללו אוטומatically לאחר ההעלאה
+              </p>
+            </div>
+
+            <Button
+              onClick={() => document.getElementById('direct-transcription-input')?.click()}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-2"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              בחר קבצים לתמלול
+            </Button>
+
+            <input
+              id="direct-transcription-input"
+              type="file"
+              multiple
+              accept="audio/*,video/*,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v"
+              onChange={handleDirectFileUpload}
+              className="hidden"
+            />
+
+            <div className="text-xs text-gray-400 mt-4 space-y-1">
+              <p><strong>אודיו:</strong> MP3, WAV, FLAC, AAC, OGG, M4A, WMA</p>
+              <p><strong>וידאו:</strong> MP4, AVI, MOV, MKV, WMV, FLV, WebM, M4V</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Font Controls */}
       {transcriptions.length > 0 && (
         <FontControls
