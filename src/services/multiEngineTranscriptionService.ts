@@ -1,5 +1,5 @@
 
-export type TranscriptionEngine = 'groq' | 'google' | 'assemblyai' | 'vosk';
+export type TranscriptionEngine = 'groq' | 'google' | 'assemblyai' | 'vosk' | 'transkriptor';
 
 interface TranscriptionResponse {
   text: string;
@@ -191,6 +191,116 @@ const transcribeWithAssemblyAI = async (
   throw new Error('תמלול AssemblyAI נכשל');
 };
 
+// Transkriptor transcription
+const transcribeWithTranskriptor = async (
+  audioFile: File,
+  apiKey: string,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  console.log(`Starting Transkriptor transcription for: ${audioFile.name}`);
+  
+  if (onProgress) onProgress(5);
+  
+  // Step 1: Upload the file
+  const uploadFormData = new FormData();
+  uploadFormData.append('file', audioFile);
+  uploadFormData.append('config', JSON.stringify({
+    language: 'he',
+    diarization: false,
+    punctuation: true
+  }));
+  
+  const uploadResponse = await fetch('https://api.transkriptor.com/v1/file-upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: uploadFormData
+  });
+  
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`שגיאה בהעלאת הקובץ ל-Transkriptor: ${errorText}`);
+  }
+  
+  const uploadResult = await uploadResponse.json();
+  const fileId = uploadResult.fileId;
+  
+  if (onProgress) onProgress(20);
+  
+  // Step 2: Start transcription
+  const transcriptionResponse = await fetch('https://api.transkriptor.com/v1/transcription', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      fileId: fileId,
+      language: 'he',
+      config: {
+        punctuation: true,
+        diarization: false
+      }
+    })
+  });
+  
+  if (!transcriptionResponse.ok) {
+    const errorText = await transcriptionResponse.text();
+    throw new Error(`שגיאה בבקשת התמלול מ-Transkriptor: ${errorText}`);
+  }
+  
+  const transcriptionResult = await transcriptionResponse.json();
+  const transcriptionId = transcriptionResult.transcriptionId;
+  
+  if (onProgress) onProgress(30);
+  
+  // Step 3: Poll for completion
+  let status = 'processing';
+  let attempts = 0;
+  const maxAttempts = 60; // 5 minutes timeout
+  
+  while (status === 'processing' || status === 'queued') {
+    if (attempts >= maxAttempts) {
+      throw new Error('תמלול Transkriptor לקח יותר מדי זמן');
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+    
+    const statusResponse = await fetch(`https://api.transkriptor.com/v1/transcription/${transcriptionId}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      }
+    });
+    
+    if (!statusResponse.ok) {
+      throw new Error('שגיאה בבדיקת סטטוס התמלול');
+    }
+    
+    const statusResult = await statusResponse.json();
+    status = statusResult.status;
+    
+    if (onProgress) {
+      const progress = Math.min(30 + (attempts * 2), 90);
+      onProgress(progress);
+    }
+    
+    if (status === 'completed') {
+      if (onProgress) onProgress(100);
+      console.log('Transkriptor transcription completed:', statusResult.text);
+      return statusResult.text || '';
+    }
+    
+    if (status === 'error') {
+      throw new Error(`שגיאה בתמלול Transkriptor: ${statusResult.error}`);
+    }
+    
+    attempts++;
+  }
+  
+  throw new Error('תמלול Transkriptor נכשל');
+};
+
 // Vosk transcription (mock implementation - requires WebAssembly setup)
 const transcribeWithVosk = async (
   audioFile: File,
@@ -238,6 +348,9 @@ export const transcribeWithEngine = async (
     
     case 'assemblyai':
       return transcribeWithAssemblyAI(audioFile, apiKey, onProgress);
+    
+    case 'transkriptor':
+      return transcribeWithTranskriptor(audioFile, apiKey, onProgress);
     
     case 'vosk':
       return transcribeWithVosk(audioFile, apiKey, onProgress);

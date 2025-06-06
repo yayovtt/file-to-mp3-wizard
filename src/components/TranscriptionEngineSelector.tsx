@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,9 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Key, Mic, Globe } from 'lucide-react';
+import { Settings, Key, Mic, Globe, Brain } from 'lucide-react';
 
-export type TranscriptionEngine = 'groq' | 'google' | 'assemblyai' | 'vosk';
+export type TranscriptionEngine = 'groq' | 'google' | 'assemblyai' | 'vosk' | 'transkriptor';
 
 interface TranscriptionEngineConfig {
   engine: TranscriptionEngine;
@@ -53,6 +52,14 @@ export const TranscriptionEngineSelector = ({
       icon: <Settings className="w-4 h-4" />,
       needsApiKey: true,
       placeholder: 'API Key...'
+    },
+    {
+      id: 'transkriptor' as TranscriptionEngine,
+      name: 'Transkriptor',
+      description: 'תמלול חכם ומדויק בעברית',
+      icon: <Brain className="w-4 h-4" />,
+      needsApiKey: true,
+      placeholder: 'Transkriptor API Key...'
     },
     {
       id: 'vosk' as TranscriptionEngine,

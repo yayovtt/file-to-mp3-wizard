@@ -34,9 +34,18 @@ interface TranscriptionSectionProps {
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
-  // Default engines and API keys
+  // Default engines and API keys with all the provided keys
   const [currentEngine, setCurrentEngine] = useState<TranscriptionEngine>('groq');
   const [currentApiKey, setCurrentApiKey] = useState('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');
+  
+  // Store all API keys
+  const [apiKeys, setApiKeys] = useState({
+    groq: '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',
+    google: 'AIzaSyCD7d0Ipo-Lgmy0s0EY_ukPEmlxNk_RRvk',
+    assemblyai: 'b900b2037f6547df819f9161872d7579',
+    transkriptor: '4e319dbec40dae1fe11076df828d70ea594d9ef2757b098d2956ad15fc510d8d71bccc6bfb8b0eebe0b74440b4d93fb7b132d0d047f0e583228c45bf153fbd53',
+    vosk: ''
+  });
   
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const [fontSize, setFontSize] = useState(16);
@@ -74,6 +83,12 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
   const handleEngineChange = (config: { engine: TranscriptionEngine; apiKey: string }) => {
     setCurrentEngine(config.engine);
     setCurrentApiKey(config.apiKey);
+    
+    // Update the stored API key for this engine
+    setApiKeys(prev => ({
+      ...prev,
+      [config.engine]: config.apiKey
+    }));
     
     toast({
       title: 'מנוע תמלול עודכן',
@@ -147,11 +162,12 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         });
       }
       
-      // Use the selected transcription engine
+      // Use the selected transcription engine with its stored API key
+      const apiKeyToUse = currentApiKey || apiKeys[currentEngine];
       const transcription = await transcribeWithEngine(
         currentEngine,
         file.file, 
-        currentApiKey,
+        apiKeyToUse,
         (progress) => {
           setTranscriptions(prev => prev.map(t => 
             t.fileId === file.id 
