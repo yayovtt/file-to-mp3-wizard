@@ -4,13 +4,14 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Loader2, Download, MessageSquare, Info, Save, Edit3, Upload, Music, Video } from 'lucide-react';
+import { FileText, Loader2, Download, MessageSquare, Save, Edit3, Upload, Music, Video } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
-import { transcribeAudio } from '@/services/transcriptionService';
+import { transcribeWithEngine, TranscriptionEngine } from '@/services/multiEngineTranscriptionService';
 import { processText, AIProvider } from '@/services/textProcessingService';
 import { useToast } from '@/hooks/use-toast';
 import { FontControls } from '@/components/FontControls';
 import { TextProcessingOptions } from '@/components/TextProcessingOptions';
+import { TranscriptionEngineSelector } from '@/components/TranscriptionEngineSelector';
 
 interface TranscriptionResult {
   fileId: string;
@@ -33,7 +34,10 @@ interface TranscriptionSectionProps {
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
-  const groqApiKey = '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';
+  // Default engines and API keys
+  const [currentEngine, setCurrentEngine] = useState<TranscriptionEngine>('groq');
+  const [currentApiKey, setCurrentApiKey] = useState('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');
+  
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const [fontSize, setFontSize] = useState(16);
   const [fontFamily, setFontFamily] = useState('Arial');
@@ -64,6 +68,16 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       };
 
       updateProgress();
+    });
+  };
+
+  const handleEngineChange = (config: { engine: TranscriptionEngine; apiKey: string }) => {
+    setCurrentEngine(config.engine);
+    setCurrentApiKey(config.apiKey);
+    
+    toast({
+      title: 'מנוע תמלול עודכן',
+      description: `המערכת תשתמש עכשיו ב-${config.engine} לתמלול`,
     });
   };
 
@@ -126,17 +140,18 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     }
 
     try {
-      if (isLargeFile) {
+      if (isLargeFile && currentEngine === 'groq') {
         toast({
           title: 'קובץ גדול זוהה',
           description: `הקובץ (${(file.file.size / 1024 / 1024).toFixed(1)}MB) יפוצל אוטומטית לחלקים קטנים יותר לתמלול`,
         });
       }
       
-      // Use the new chunked transcription with progress callback
-      const transcription = await transcribeAudio(
+      // Use the selected transcription engine
+      const transcription = await transcribeWithEngine(
+        currentEngine,
         file.file, 
-        groqApiKey,
+        currentApiKey,
         (progress) => {
           setTranscriptions(prev => prev.map(t => 
             t.fileId === file.id 
@@ -152,9 +167,9 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           : t
       ));
 
-      const successMessage = isLargeFile 
-        ? `התמלול של ${file.file.name} הושלם בהצלחה (פוצל ל-${Math.ceil(file.file.size / (49 * 1024 * 1024))} חלקים)`
-        : `התמלול של ${file.file.name} הושלם בהצלחה`;
+      const successMessage = isLargeFile && currentEngine === 'groq'
+        ? `התמלול של ${file.file.name} הושלם בהצלחה עם ${currentEngine} (פוצל לחלקים)`
+        : `התמלול של ${file.file.name} הושלם בהצלחה עם ${currentEngine}`;
 
       toast({
         title: 'תמלול הושלם',
@@ -170,7 +185,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       
       toast({
         title: 'שגיאה בתמלול',
-        description: `אירעה שגיאה במהלך התמלול: ${error.message}`,
+        description: `אירעה שגיאה במהלך התמלול עם ${currentEngine}: ${error.message}`,
         variant: 'destructive',
       });
     }
@@ -353,6 +368,13 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
   return (
     <div className="space-y-8" dir="rtl">
+      {/* Transcription Engine Selector */}
+      <TranscriptionEngineSelector
+        onEngineChange={handleEngineChange}
+        currentEngine={currentEngine}
+        currentApiKey={currentApiKey}
+      />
+
       {/* Direct File Upload Section */}
       <Card className="p-8 bg-gradient-to-br from-blue-50 to-purple-50 backdrop-blur-sm shadow-lg border-2 border-blue-200 rounded-xl">
         <div className="flex items-center mb-6">
@@ -381,7 +403,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                 בחר קבצים לתמלול מיידי
               </h3>
               <p className="text-gray-500">
-                הקבצים יתמללו אוטומatically לאחר ההעלאה
+                הקבצים יתמללו אוטומטי לאחר ההעלאה
               </p>
             </div>
 
@@ -444,7 +466,6 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           <div className="grid gap-4">
             {completedFiles.map((file) => {
               const isLargeFile = file.file.size > 49 * 1024 * 1024;
-              const estimatedChunks = Math.ceil(file.file.size / (49 * 1024 * 1024));
               
               return (
                 <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
@@ -535,7 +556,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                   <div className="space-y-4 py-6">
                     <div className="flex items-center justify-center text-blue-600">
                       <Loader2 className="w-6 h-6 animate-spin ml-3" />
-                      <span className="text-lg font-medium">מתמלל את הקובץ...</span>
+                      <span className="text-lg font-medium">מתמלל את הקובץ עם {currentEngine}...</span>
                     </div>
                     <div className="w-full">
                       <div className="flex justify-between text-sm text-gray-600 mb-2">
