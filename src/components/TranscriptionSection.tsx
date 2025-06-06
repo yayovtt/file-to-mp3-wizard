@@ -33,7 +33,7 @@ interface TranscriptionSectionProps {
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
-  const groqApiKey = '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';
+  const groqApiKey = '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';
   const [transcriptions, setTranscriptions] = useState<TranscriptionResult[]>([]);
   const [fontSize, setFontSize] = useState(16);
   const [fontFamily, setFontFamily] = useState('Arial');
