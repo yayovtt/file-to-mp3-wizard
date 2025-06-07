@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -34,13 +35,13 @@ interface TranscriptionSectionProps {
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
-  // Default engines and API keys with all the provided keys
+  // Default engines and API keys with the updated Groq key
   const [currentEngine, setCurrentEngine] = useState<TranscriptionEngine>('groq');
-  const [currentApiKey, setCurrentApiKey] = useState('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');
+  const [currentApiKey, setCurrentApiKey] = useState('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');
   
-  // Store all API keys
+  // Store all API keys with the new Groq key
   const [apiKeys, setApiKeys] = useState({
-    groq: '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',
+    groq: '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',
     google: 'AIzaSyCD7d0Ipo-Lgmy0s0EY_ukPEmlxNk_RRvk',
     assemblyai: 'b900b2037f6547df819f9161872d7579',
     transkriptor: '4e319dbec40dae1fe11076df828d70ea594d9ef2757b098d2956ad15fc510d8d71bccc6bfb8b0eebe0b74440b4d93fb7b132d0d047f0e583228c45bf153fbd53',
