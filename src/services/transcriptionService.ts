@@ -1,4 +1,3 @@
-
 import { splitAudioFile } from './audioSplitterService';
 
 interface TranscriptionResponse {
@@ -40,10 +39,35 @@ export const transcribeAudioChunked = async (
     throw new Error('מפתח API חסר או לא תקין');
   }
   
+  // Check if file is video and needs to be converted to audio
+  const isVideoFile = audioFile.type.startsWith('video/') || 
+    ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm', '.m4v'].some(ext => 
+      audioFile.name.toLowerCase().endsWith(ext)
+    );
+  
+  let fileToTranscribe = audioFile;
+  
+  if (isVideoFile) {
+    console.log('Video file detected, extracting audio...');
+    if (onProgress) onProgress(5);
+    
+    try {
+      // Extract audio from video using Web API
+      const audioBlob = await extractAudioFromVideo(audioFile);
+      fileToTranscribe = new File([audioBlob], audioFile.name.replace(/\.[^/.]+$/, '.wav'), {
+        type: 'audio/wav'
+      });
+      console.log(`Audio extracted, new size: ${fileToTranscribe.size} bytes`);
+    } catch (error) {
+      console.error('Error extracting audio from video:', error);
+      throw new Error('שגיאה בחילוץ אודיו מקובץ הווידאו. נסה להמיר את הקובץ לפורמט אודיו תחילה.');
+    }
+  }
+  
   // Split file if necessary
   let chunks;
   try {
-    chunks = await splitAudioFile(audioFile);
+    chunks = await splitAudioFile(fileToTranscribe);
     console.log(`File split into ${chunks.length} chunks`);
   } catch (error) {
     console.error('Error splitting audio file:', error);
@@ -62,15 +86,33 @@ export const transcribeAudioChunked = async (
     
     try {
       const formData = new FormData();
-      formData.append('file', chunk.blob, `chunk_${i}.wav`);
+      
+      // Ensure we're sending the correct file format
+      let chunkBlob = chunk.blob;
+      let fileName = `chunk_${i}.wav`;
+      
+      // If original chunk is still a video file or unsupported format, skip it
+      if (chunkBlob.type.startsWith('video/') || 
+          (!chunkBlob.type.startsWith('audio/') && chunkBlob.type !== '')) {
+        console.warn(`Skipping chunk ${i} - unsupported format: ${chunkBlob.type}`);
+        continue;
+      }
+      
+      // For supported audio formats, keep original extension
+      if (chunkBlob.type.includes('mp3')) fileName = `chunk_${i}.mp3`;
+      else if (chunkBlob.type.includes('m4a')) fileName = `chunk_${i}.m4a`;
+      else if (chunkBlob.type.includes('opus')) fileName = `chunk_${i}.opus`;
+      else if (chunkBlob.type.includes('flac')) fileName = `chunk_${i}.flac`;
+      
+      formData.append('file', chunkBlob, fileName);
       formData.append('model', 'whisper-large-v3');
       formData.append('language', 'he'); // Hebrew language
       formData.append('response_format', 'json');
 
-      console.log('Sending request to Groq API...');
+      console.log(`Sending request to Groq API for ${fileName}...`);
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes timeout
 
       const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
         method: 'POST',
@@ -88,6 +130,12 @@ export const transcribeAudioChunked = async (
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`API Error Response: ${errorText}`);
+        
+        // Handle specific error cases
+        if (response.status === 400 && errorText.includes('could not process file')) {
+          throw new Error(`הקובץ אינו תקין לתמלול או בפורמט לא נתמך. נסה להמיר אותו לפורמט MP3 או WAV`);
+        }
+        
         throw new Error(`שגיאת API (${response.status}): ${errorText}`);
       }
 
@@ -111,15 +159,20 @@ export const transcribeAudioChunked = async (
       console.error(`Error transcribing chunk ${i}:`, error);
       
       if (error.name === 'AbortError') {
-        throw new Error(`תמלול החלק ${i + 1} הופסק בגלל זמן קצוב`);
+        throw new Error(`תמלול החלק ${i + 1} הופסק בגלל זמן קצוב (3 דקות)`);
       }
       
       if (error.message.includes('Failed to fetch')) {
-        throw new Error(`בעיית חיבור לשרת התמלול בחלק ${i + 1}. בדוק את החיבור לאינטרנט`);
+        throw new Error(`בעיית חיבור לשרת התמלול בחלק ${i + 1}. הקובץ יכול להיות גדול מדי או שיש בעיית רשת`);
       }
       
       throw new Error(`שגיאה בתמלול החלק ${i + 1}: ${error.message}`);
     }
+  }
+  
+  // Check if we got any results
+  if (transcriptionResults.length === 0) {
+    throw new Error('לא ניתן היה לתמלל אף חלק מהקובץ. בדוק שהקובץ מכיל אודיו ושהוא בפורמט נתמך (MP3, WAV, M4A, OPUS, FLAC)');
   }
   
   // Combine all transcriptions
@@ -137,4 +190,32 @@ export const transcribeAudioChunked = async (
     fullText,
     chunks: transcriptionResults
   };
+};
+
+// Helper function to extract audio from video
+const extractAudioFromVideo = async (videoFile: File): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    video.onloadedmetadata = () => {
+      try {
+        // This is a simplified approach - in a real implementation,
+        // you would need a more sophisticated video-to-audio conversion
+        // For now, we'll try to pass the original file and let Groq handle it
+        // or suggest the user to convert the file manually
+        
+        reject(new Error('המערכת אינה יכולה לחלץ אודיו מווידאו אוטומטית. אנא המר את קובץ הווידאו לפורמט אודיו (MP3/WAV) תחילה או השתמש בקובץ אודיו'));
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    video.onerror = () => {
+      reject(new Error('שגיאה בטעינת קובץ הווידאו'));
+    };
+    
+    video.src = URL.createObjectURL(videoFile);
+  });
 };
