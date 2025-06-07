@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -33,17 +34,16 @@ interface TranscriptionSectionProps {
   files: FileItem[];
 }
 
+// Hidden Groq API key - completely internal, not accessible from outside
+const getGroqApiKey = () => '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';
+
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
-  // Hidden Groq API key - not visible to users
-  const HIDDEN_GROQ_API_KEY = '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';
-  
   // Default engine settings
   const [currentEngine, setCurrentEngine] = useState<TranscriptionEngine>('groq');
   const [currentApiKey, setCurrentApiKey] = useState('');
   
-  // Store user-entered API keys (empty by default)
+  // Store user-entered API keys (empty by default, no Groq key stored here)
   const [apiKeys, setApiKeys] = useState({
-    groq: '', // Hidden - uses HIDDEN_GROQ_API_KEY internally
     google: '',
     assemblyai: '',
     transkriptor: '',
@@ -87,7 +87,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     setCurrentEngine(config.engine);
     setCurrentApiKey(config.apiKey);
     
-    // Update the stored API key for this engine (except Groq which is hidden)
+    // Update the stored API key for non-Groq engines only
     if (config.engine !== 'groq') {
       setApiKeys(prev => ({
         ...prev,
@@ -170,7 +170,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       
       // Use the appropriate API key - hidden Groq key or user-entered key
       const apiKeyToUse = currentEngine === 'groq' 
-        ? HIDDEN_GROQ_API_KEY 
+        ? getGroqApiKey()
         : currentApiKey || apiKeys[currentEngine];
         
       const transcription = await transcribeWithEngine(

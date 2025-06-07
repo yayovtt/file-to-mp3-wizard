@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,10 +33,10 @@ export const TranscriptionEngineSelector = ({
     {
       id: 'groq' as TranscriptionEngine,
       name: 'Groq (Whisper)',
-      description: 'מהיר ואיכותי, עם מגבלות שעתיות',
+      description: 'מהיר ואיכותי, מוכן לשימוש',
       icon: <Mic className="w-4 h-4" />,
-      needsApiKey: true,
-      placeholder: 'gsk_...'
+      needsApiKey: false, // Changed to false - Groq doesn't need API key input
+      placeholder: ''
     },
     {
       id: 'google' as TranscriptionEngine,
