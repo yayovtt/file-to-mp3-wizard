@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Loader2, Download, MessageSquare, Save, Edit3, Upload, Music, Video } from 'lucide-react';
+import { FileText, Loader2, Download, MessageSquare, Save, Edit3, Upload, Music, Video, Trash2 } from 'lucide-react';
 import { FileItem } from '@/pages/Index';
 import { transcribeWithEngine, TranscriptionEngine } from '@/services/multiEngineTranscriptionService';
 import { processText, AIProvider } from '@/services/textProcessingService';
@@ -135,15 +134,13 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
 
   const handleTranscribe = async (file: FileItem) => {
     const existingIndex = transcriptions.findIndex(t => t.fileId === file.id);
-    const isLargeFile = file.file.size > 49 * 1024 * 1024; // 49MB
     
     if (existingIndex >= 0) {
       setTranscriptions(prev => prev.map((t, i) => 
         i === existingIndex ? { 
           ...t, 
           isTranscribing: true, 
-          transcriptionProgress: 0,
-          wasChunked: isLargeFile
+          transcriptionProgress: 0
         } : t
       ));
     } else {
@@ -155,19 +152,11 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         isProcessing: false,
         transcriptionProgress: 0,
         processingProgress: 0,
-        fileSize: file.file.size,
-        wasChunked: isLargeFile
+        fileSize: file.file.size
       }]);
     }
 
     try {
-      if (isLargeFile && currentEngine === 'groq') {
-        toast({
-          title: 'קובץ גדול זוהה',
-          description: `הקובץ (${(file.file.size / 1024 / 1024).toFixed(1)}MB) יפוצל אוטומטית לחלקים קטנים יותר לתמלול`,
-        });
-      }
-      
       // Use the appropriate API key - hidden Groq key or user-entered key
       const apiKeyToUse = currentEngine === 'groq' 
         ? getGroqApiKey()
@@ -192,13 +181,9 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           : t
       ));
 
-      const successMessage = isLargeFile && currentEngine === 'groq'
-        ? `התמלול של ${file.file.name} הושלם בהצלחה עם ${currentEngine} (פוצל לחלקים)`
-        : `התמלול של ${file.file.name} הושלם בהצלחה עם ${currentEngine}`;
-
       toast({
         title: 'תמלול הושלם',
-        description: successMessage,
+        description: `התמלול של ${file.file.name} הושלם בהצלחה עם ${currentEngine}`,
       });
     } catch (error) {
       console.error('Transcription error:', error);
@@ -317,6 +302,22 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     toast({
       title: 'נשמר בהצלחה',
       description: `השינויים ב${type === 'transcription' ? 'תמלול' : 'טקסט המעובד'} נשמרו`,
+    });
+  };
+
+  const handleClearTranscription = (fileId: string) => {
+    setTranscriptions(prev => prev.filter(t => t.fileId !== fileId));
+    toast({
+      title: 'תמלול נמחק',
+      description: 'התמלול נמחק בהצלחה',
+    });
+  };
+
+  const handleClearAllTranscriptions = () => {
+    setTranscriptions([]);
+    toast({
+      title: 'כל התמלולים נמחקו',
+      description: 'כל התמלולים נמחקו בהצלחה',
     });
   };
 
@@ -489,46 +490,42 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
           </div>
           
           <div className="grid gap-4">
-            {completedFiles.map((file) => {
-              const isLargeFile = file.file.size > 49 * 1024 * 1024;
-              
-              return (
-                <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
-                  <div className="flex items-center space-x-4 space-x-reverse">
-                    <div className="bg-gradient-to-r from-purple-100 to-purple-200 p-3 rounded-xl">
-                      <FileText className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-lg">
-                        {file.file.name}
-                      </p>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p>מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
+            {completedFiles.map((file) => (
+              <div key={file.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center space-x-4 space-x-reverse">
+                  <div className="bg-gradient-to-r from-purple-100 to-purple-200 p-3 rounded-xl">
+                    <FileText className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-lg">
+                      {file.file.name}
+                    </p>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>מוכן לתמלול • {(file.file.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                   </div>
-                  
-                  <Button
-                    size="lg"
-                    onClick={() => handleTranscribe(file)}
-                    disabled={transcriptions.find(t => t.fileId === file.id)?.isTranscribing}
-                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-3 rounded-xl shadow-lg"
-                  >
-                    {transcriptions.find(t => t.fileId === file.id)?.isTranscribing ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                        מתמלל...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-5 h-5 ml-2" />
-                        תמלל עכשיו
-                      </>
-                    )}
-                  </Button>
                 </div>
-              );
-            })}
+                
+                <Button
+                  size="lg"
+                  onClick={() => handleTranscribe(file)}
+                  disabled={transcriptions.find(t => t.fileId === file.id)?.isTranscribing}
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-3 rounded-xl shadow-lg"
+                >
+                  {transcriptions.find(t => t.fileId === file.id)?.isTranscribing ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                      מתמלל...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-5 h-5 ml-2" />
+                      תמלל עכשיו
+                    </>
+                  )}
+                </Button>
+              </div>
+            ))}
           </div>
         </Card>
       )}
@@ -536,14 +533,25 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       {/* Transcription Results */}
       {transcriptions.length > 0 && (
         <Card className="p-8 bg-white/90 backdrop-blur-sm shadow-lg border-0 rounded-xl">
-          <div className="flex items-center mb-6">
-            <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl ml-4">
-              <MessageSquare className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl ml-4">
+                <MessageSquare className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">תוצאות תמלול וסיכום</h3>
+                <p className="text-gray-600 text-sm">הטקסטים המתמללים והסיכומים שלהם</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">תוצאות תמלול וסיכום</h3>
-              <p className="text-gray-600 text-sm">הטקסטים המתמללים והסיכומים שלהם</p>
-            </div>
+            
+            <Button
+              onClick={handleClearAllTranscriptions}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              נקה הכל
+            </Button>
           </div>
           
           <div className="space-y-8">
@@ -562,6 +570,15 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
                     </div>
                   </div>
                   <div className="flex gap-3 space-x-reverse">
+                    <Button
+                      onClick={() => handleClearTranscription(result.fileId)}
+                      variant="destructive"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      מחק
+                    </Button>
                     {result.transcription && (
                       <Button
                         size="lg"
