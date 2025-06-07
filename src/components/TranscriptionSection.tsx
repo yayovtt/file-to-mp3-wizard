@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -35,16 +34,19 @@ interface TranscriptionSectionProps {
 }
 
 export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
-  // Default engines and API keys with the updated Groq key
-  const [currentEngine, setCurrentEngine] = useState<TranscriptionEngine>('groq');
-  const [currentApiKey, setCurrentApiKey] = useState('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');
+  // Hidden Groq API key - not visible to users
+  const HIDDEN_GROQ_API_KEY = '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';
   
-  // Store all API keys with the new Groq key
+  // Default engine settings
+  const [currentEngine, setCurrentEngine] = useState<TranscriptionEngine>('groq');
+  const [currentApiKey, setCurrentApiKey] = useState('');
+  
+  // Store user-entered API keys (empty by default)
   const [apiKeys, setApiKeys] = useState({
-    groq: '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',
-    google: 'AIzaSyCD7d0Ipo-Lgmy0s0EY_ukPEmlxNk_RRvk',
-    assemblyai: 'b900b2037f6547df819f9161872d7579',
-    transkriptor: '4e319dbec40dae1fe11076df828d70ea594d9ef2757b098d2956ad15fc510d8d71bccc6bfb8b0eebe0b74440b4d93fb7b132d0d047f0e583228c45bf153fbd53',
+    groq: '', // Hidden - uses HIDDEN_GROQ_API_KEY internally
+    google: '',
+    assemblyai: '',
+    transkriptor: '',
     vosk: ''
   });
   
@@ -85,11 +87,13 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     setCurrentEngine(config.engine);
     setCurrentApiKey(config.apiKey);
     
-    // Update the stored API key for this engine
-    setApiKeys(prev => ({
-      ...prev,
-      [config.engine]: config.apiKey
-    }));
+    // Update the stored API key for this engine (except Groq which is hidden)
+    if (config.engine !== 'groq') {
+      setApiKeys(prev => ({
+        ...prev,
+        [config.engine]: config.apiKey
+      }));
+    }
     
     toast({
       title: 'מנוע תמלול עודכן',
@@ -97,6 +101,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
     });
   };
 
+  // Direct File Upload Section
   const handleDirectFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     const supportedFiles = selectedFiles.filter(file => 
@@ -163,8 +168,11 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
         });
       }
       
-      // Use the selected transcription engine with its stored API key
-      const apiKeyToUse = currentApiKey || apiKeys[currentEngine];
+      // Use the appropriate API key - hidden Groq key or user-entered key
+      const apiKeyToUse = currentEngine === 'groq' 
+        ? HIDDEN_GROQ_API_KEY 
+        : currentApiKey || apiKeys[currentEngine];
+        
       const transcription = await transcribeWithEngine(
         currentEngine,
         file.file, 
@@ -389,7 +397,7 @@ export const TranscriptionSection = ({ files }: TranscriptionSectionProps) => {
       <TranscriptionEngineSelector
         onEngineChange={handleEngineChange}
         currentEngine={currentEngine}
-        currentApiKey={currentApiKey}
+        currentApiKey={currentEngine === 'groq' ? '' : currentApiKey}
       />
 
       {/* Direct File Upload Section */}
